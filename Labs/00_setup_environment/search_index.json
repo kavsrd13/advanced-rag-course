@@ -1,0 +1,16 @@
+{
+  "name": "rag-basic",
+  "fields": [
+    {"name": "id", "type": "Edm.String", "key": true, "retrievable": true, "searchable": false, "filterable": false, "sortable": false, "facetable": false},
+    {"name": "title", "type": "Edm.String", "retrievable": true, "searchable": true, "filterable": false, "sortable": false, "facetable": false},
+    {"name": "content", "type": "Edm.String", "retrievable": true, "searchable": true, "filterable": false, "sortable": false, "facetable": false},
+    {"name": "contentVector", "type": "Collection(Edm.Single)", "searchable": true, "dimensions": 3072, "vectorSearchProfile": "rag-vector-profile"},
+    {"name": "source", "type": "Edm.String", "retrievable": true, "searchable": false, "filterable": true, "sortable": false, "facetable": false},
+    {"name": "documentId", "type": "Edm.String", "retrievable": true, "searchable": false, "filterable": true, "sortable": false, "facetable": false},
+    {"name": "policyId", "type": "Edm.String", "retrievable": true, "searchable": false, "filterable": true, "sortable": false, "facetable": false}
+  ],
+  "vectorSearch": {
+    "algorithms": [{"name": "rag-hnsw", "kind": "hnsw"}],
+    "profiles": [{"name": "rag-vector-profile", "algorithm": "rag-hnsw"}]
+  }
+}

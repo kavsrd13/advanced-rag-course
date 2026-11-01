@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>07 · Choose a RAG architecture</title>
+<style>
+    :root { color-scheme: light; --ink:#16304a; --muted:#52677a; --line:#d9e3eb; --blue:#075aa5; --pale:#edf5fc; --gold:#fff2d8; --green:#e8f5ef; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:#f7fafc; color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    a:focus-visible, button:focus-visible { outline:3px solid #ffab36; outline-offset:3px; }
+    header { background:linear-gradient(125deg,#102a43,#075aa5); color:#fff; padding:3.4rem max(1.25rem,calc((100% - 1100px)/2)); }
+    header .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-weight:700; color:#a9d6ff; font-size:.8rem; }
+    h1 { font-size:clamp(2rem,5vw,3.4rem); line-height:1.12; margin:.55rem 0 1rem; }
+    h2 { margin:0 0 .8rem; font-size:1.65rem; }
+    h3 { margin:1.5rem 0 .4rem; font-size:1.13rem; }
+    p { margin:.45rem 0 1rem; }
+    .lead { max-width:770px; font-size:1.14rem; color:#e5f3ff; }
+    .badges { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:1.5rem; }
+    .badge { border:1px solid #86b9e4; border-radius:99px; padding:.25rem .8rem; font-size:.88rem; }
+    .layout { max-width:1100px; margin:auto; padding:1.5rem; display:grid; grid-template-columns:220px minmax(0,1fr); gap:2rem; }
+    nav { position:sticky; top:1rem; align-self:start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:1rem; }
+    nav strong { display:block; margin-bottom:.5rem; }
+    nav a { display:block; padding:.36rem .1rem; text-decoration:none; font-size:.92rem; }
+    nav a:hover { text-decoration:underline; }
+    main { min-width:0; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1.5rem; margin-bottom:1.2rem; box-shadow:0 3px 15px #183b5809; }
+    .step { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:50%; background:#075aa5; color:#fff; font-weight:700; margin-right:.5rem; }
+    .callout { border-left:4px solid var(--blue); background:var(--pale); padding:.9rem 1rem; border-radius:0 8px 8px 0; margin:1rem 0; }
+    .callout.warn { border-color:#ba7900; background:var(--gold); }
+    .callout.good { border-color:#278058; background:var(--green); }
+    pre { overflow:auto; background:#102a43; color:#e8f4ff; border-radius:10px; padding:1rem; line-height:1.48; font-size:.9rem; }
+    code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    :not(pre)>code { background:#edf3f8; border-radius:4px; padding:.1rem .28rem; color:#173b61; }
+    table { border-collapse:collapse; width:100%; font-size:.94rem; }
+    th,td { border-bottom:1px solid var(--line); padding:.65rem; text-align:left; vertical-align:top; }
+    th { background:#f0f6fb; }
+    .scroll { overflow-x:auto; }
+    details { border:1px solid var(--line); border-radius:10px; padding:.7rem 1rem; margin:.7rem 0; }
+    summary { cursor:pointer; font-weight:700; }
+    details pre { max-height:440px; }
+    ol li, ul li { margin:.35rem 0; }
+    .filelinks { display:flex; flex-wrap:wrap; gap:.6rem; }
+    .filelinks a { display:inline-block; background:#e6f1fa; padding:.4rem .7rem; border-radius:7px; font-weight:600; }
+    footer { max-width:1100px; margin:0 auto 2rem; padding:0 1.5rem; color:var(--muted); font-size:.88rem; }
+    @media (max-width:780px) { .layout { display:block; padding:1rem; } nav { position:static; margin-bottom:1rem; } nav a { display:inline-block; margin-right:.8rem; } section { padding:1.1rem; } }
+  </style></head>
+<body>
+<header><div class="eyebrow">Advanced RAG course · Hands-on exercise 07</div>
+<h1>Choose a RAG architecture</h1><p class="lead">Map a workload description to basic, filtered hybrid, multihop, or graph RAG with an inspectable Python decision function.</p>
+<div class="badges"><span class="badge">PowerShell on Windows</span><span class="badge">Python 3.11</span>
+<span class="badge">Local workshop; no Azure calls</span></div></header>
+<div class="layout"><nav aria-label="Exercise steps"><strong>Follow in order</strong><a href="#goal">Goal</a><a href="#prereq">1. Prerequisites</a><a href="#python">2. Python environment</a><a href="#azure">3. Azure resources</a><a href="#config">4. Configure</a><a href="#scripts">5. Understand scripts</a><a href="#run">6. Run in order</a><a href="#test">7. Test prompts</a><a href="#cleanup">8. Clean up</a></nav>
+<main><section id="goal"><h2>What you will learn</h2><p>This is a rule-based design workshop rather than a retrieval app. <code>choose_rag_pattern</code> checks for relationship, multi-source, then filtering terms and returns the simplest matching pattern. Rule order matters: a workload mentioning both graph relationships and filters chooses graph RAG first.</p></section><section id="prereq"><h2><span class="step">1</span>Check prerequisites</h2><p>Have Python 3.11 and the complete course folder. No subscription, model deployment, key, corpus, or package installation is required.</p></section><section id="python"><h2><span class="step">2</span>Create the Python environment</h2><p>This script uses only the Python standard library. Create an isolated environment so the run command is consistent with the rest of the course; no packages need installing.</p><pre><code>python --version
+python -m venv .venv
+.\.venv\Scripts\python.exe --version</code></pre></section><section id="azure"><h2><span class="step">3</span>Create or reuse Azure resources</h2><p>This is a local architecture exercise. It creates no Azure resources and needs no <code>.env</code>.</p><p>If you are continuing from another lab, leave its resources alone until you finish the course.</p></section><section id="config"><h2><span class="step">4</span>Configure this lab</h2><p>No credentials or <code>.env</code> file are required.</p></section><section id="scripts"><h2><span class="step">5</span>Understand the code</h2><h3><a href="../Labs/07_architecture_selection_workshop/choose_architecture.py">choose_architecture.py</a></h3><ol><li><strong><code>choose_rag_pattern</code>:</strong> lowercase the workload and test for graph/entity/relationship terms, then multihop/multiple-source terms, then metadata/filter/permission terms.</li><li><strong>Fallback:</strong> return <code>basic_rag</code> when no special route is requested.</li><li><strong><code>main</code>:</strong> apply the rules to four example workloads and print JSON decisions.</li></ol><details><summary>Read the complete embedded choose_architecture.py source</summary><pre><code>import json
+
+
+def choose_rag_pattern(workload):
+    &quot;&quot;&quot;Select the simplest pattern that satisfies the workload.&quot;&quot;&quot;
+    text = workload.lower()
+
+    if &quot;relationship&quot; in text or &quot;entity&quot; in text or &quot;graph&quot; in text:
+        return &quot;graph_rag&quot;
+    if &quot;multi-hop&quot; in text or &quot;multiple sources&quot; in text:
+        return &quot;multihop_rag&quot;
+    if &quot;metadata&quot; in text or &quot;filter&quot; in text or &quot;permission&quot; in text:
+        return &quot;hybrid_rag_with_filters&quot;
+    return &quot;basic_rag&quot;
+
+
+def main():
+    workloads = [
+        &quot;Simple policy question&quot;,
+        &quot;Need exact codes and metadata filters&quot;,
+        &quot;Need multi-hop answers across multiple sources&quot;,
+        &quot;Need relationships between incidents and firmware&quot;,
+    ]
+
+    decisions = [
+        {&quot;workload&quot;: workload, &quot;recommended_pattern&quot;: choose_rag_pattern(workload)}
+        for workload in workloads
+    ]
+    print(json.dumps(decisions, indent=2))
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></details></section><section id="run"><h2><span class="step">6</span>Run the scripts in order</h2><h3>Print the four sample decisions</h3><pre><code>.\.venv\Scripts\python.exe .\07_architecture_selection_workshop\choose_architecture.py</code></pre><h3>Try one workload without editing the file</h3><pre><code>.\.venv\Scripts\python.exe -c &quot;import sys; sys.path.insert(0, &#x27;07_architecture_selection_workshop&#x27;); from choose_architecture import choose_rag_pattern; print(choose_rag_pattern(&#x27;Need metadata permission filters&#x27;))&quot;</code></pre><p>Expected sample recommendations include <code>basic_rag</code>, <code>hybrid_rag_with_filters</code>, <code>multihop_rag</code>, and <code>graph_rag</code>. Explain which keyword triggered each branch.</p></section><section id="test"><h2><span class="step">7</span>Test and explain the result</h2><p>Run these prompts using the interface shown above. Model wording and ranking may vary; compare the listed sources, routing trace, scores, and citations against the expected observation.</p><div class="scroll"><table><thead><tr><th>Prompt or learner change</th><th>What to inspect</th></tr></thead><tbody><tr><td>Simple policy question</td><td>basic_rag</td></tr><tr><td>Need exact codes and metadata filters</td><td>hybrid_rag_with_filters</td></tr><tr><td>Need answers across multiple sources</td><td>multihop_rag</td></tr><tr><td>Need relationships between incidents and firmware</td><td>graph_rag</td></tr><tr><td>Need both graph relationships and permission filters</td><td>graph_rag because the relationship rule runs first; discuss whether the real system also needs a permission filter.</td></tr></tbody></table></div></section><section id="cleanup"><h2><span class="step">8</span>Delete what you created</h2><p>This lab creates no Azure resources. Close the terminal when finished. Keep or remove the local virtual environment according to your course workflow.</p></section><section id="references"><h2>Reference documentation</h2><ul><li><a href="https://learn.microsoft.com/en-us/azure/search/search-what-is-azure-search">Azure AI Search overview</a></li></ul></section></main></div>
+<footer>07 · Fictional course documents. Run commands from the course Labs folder. <a href="../Labs/README.md">Course index</a></footer>
+</body></html>

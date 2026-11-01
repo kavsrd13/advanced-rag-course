@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exercise: Explore Transformer Pipelines in Google Colab</title>
+  <style>
+    :root{--blue:#2563eb;--navy:#172554;--ink:#25324a;--muted:#5d6b82;--line:#d9e1ec;--soft:#f5f8fc;--tip:#ecfdf5;--warn:#fff7ed;--hf:#ffbd19}
+    *{box-sizing:border-box}body{margin:0;font:16px/1.65 "Segoe UI",Arial,sans-serif;color:var(--ink);background:#fff}
+    header{background:var(--navy);color:#fff;padding:18px 24px}header div,main{max-width:1020px;margin:auto}header div{font-weight:650}
+    main{padding:44px 24px 80px}h1{font-size:2.35rem;line-height:1.15;color:#10214b;margin:0 0 12px}
+    h2{margin-top:50px;padding-bottom:8px;border-bottom:1px solid var(--line);color:#163a78}h3{margin-top:32px;color:#244a86}
+    a{color:#075fc8}.lead{font-size:1.15rem;color:var(--muted)}.meta{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 28px}
+    .pill{background:#eaf2ff;color:#164a96;border-radius:999px;padding:6px 12px;font-weight:600}
+    .box{border-left:5px solid var(--blue);background:var(--soft);padding:16px 20px;margin:22px 0}
+    .tip{border-color:#16a36a;background:var(--tip)}.warn{border-color:#f08c2e;background:var(--warn)}.hf{border-color:var(--hf);background:#fffbea}
+    .code{position:relative;margin:18px 0 26px}.label{background:#26364d;color:#fff;padding:7px 12px;border-radius:7px 7px 0 0;font-size:.85rem}
+    pre{margin:0;background:#111827;color:#e7edf6;padding:18px;overflow:auto;border-radius:0 0 7px 7px;font:14px/1.55 Consolas,monospace}
+    code{font-family:Consolas,monospace}button{position:absolute;right:9px;top:38px;border:1px solid #7890ad;background:#fff;color:#17345f;border-radius:5px;padding:5px 9px;cursor:pointer}
+    li{margin:8px 0}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:#edf3fb}
+    .summary{background:#eaf2ff;padding:22px;border-radius:10px;margin-top:44px}.task{display:inline-block;background:#fff1c2;color:#624800;border-radius:5px;padding:2px 7px;font-weight:700}
+    @media print{header,button{display:none}main{max-width:none;padding:0}.code{break-inside:avoid}a{color:inherit}}
+  </style>
+</head>
+<body>
+<header><div>AI Teaching Labs &nbsp; / &nbsp; Exercise 01 &nbsp; · &nbsp; <a href="index.html" style="color:#fff">Course index</a></div></header>
+<main>
+  <h1>Explore Transformer pipelines in Google Colab</h1>
+  <p class="lead">Use Hugging Face Transformers to solve common text, image, and audio tasks with the high-level <code>pipeline()</code> API.</p>
+  <div class="meta"><span class="pill">Beginner</span><span class="pill">60-75 minutes</span><span class="pill">Google Colab</span></div>
+
+  <div class="box hf"><strong>Based on:</strong> Hugging Face LLM Course, <a href="https://huggingface.co/learn/llm-course/chapter1/3" target="_blank" rel="noreferrer">Transformers, what can they do?</a>. This exercise reorganizes the concepts into a guided Colab lab.</div>
+
+  <h2>Learning objectives</h2>
+  <p>After completing this exercise, you will be able to:</p>
+  <ul>
+    <li>Explain how a pipeline combines preprocessing, model inference, and postprocessing.</li>
+    <li>Run sentiment analysis, zero-shot classification, text generation, mask filling, and NER.</li>
+    <li>Select a specific model from the Hugging Face Hub.</li>
+    <li>Try image classification and automatic speech recognition as optional multimodal tasks.</li>
+  </ul>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>A Google account that can open <a href="https://colab.research.google.com/" target="_blank" rel="noreferrer">Google Colab</a>.</li>
+    <li>Basic Python familiarity: variables, lists, dictionaries, and function calls.</li>
+    <li>Internet access. The notebook downloads pretrained models from the Hugging Face Hub.</li>
+  </ul>
+  <div class="box warn"><strong>Download notice:</strong> The first run of each task may take several minutes because Colab must download a model. Later calls reuse the model cached in the current Colab session.</div>
+
+  <h2>1. Create the Google Colab notebook</h2>
+  <ol>
+    <li>Open <a href="https://colab.research.google.com/" target="_blank" rel="noreferrer">Google Colab</a>.</li>
+    <li>Select <strong>New notebook</strong>.</li>
+    <li>Select the notebook title, such as <code>Untitled0.ipynb</code>, and rename it <code>transformers_pipeline_exercise.ipynb</code>.</li>
+    <li>Choose <strong>File &gt; Save a copy in Drive</strong> if you want the notebook stored in Google Drive.</li>
+    <li>For faster model inference, choose <strong>Runtime &gt; Change runtime type</strong>, select a <strong>T4 GPU</strong> if available, and select <strong>Save</strong>.</li>
+  </ol>
+  <div class="box tip"><strong>Colab workflow:</strong> Each code block below is one notebook cell. Select <strong>+ Code</strong>, paste the block, then run it with the play button or <code>Shift+Enter</code>. Run cells in order.</div>
+
+  <h2>2. Install the libraries</h2>
+  <p>Create the first code cell and run:</p>
+  <div class="code"><div class="label">Colab cell 1 - Install packages</div><button>Copy</button><pre><code>!pip install -q transformers pillow requests</code></pre></div>
+  <p>Colab already includes PyTorch. The extra packages support Transformers, images, and downloaded media.</p>
+
+  <h2>3. Import pipeline and select the device</h2>
+  <div class="code"><div class="label">Colab cell 2 - Imports and device</div><button>Copy</button><pre><code>import torch
+from transformers import pipeline
+
+device = 0 if torch.cuda.is_available() else -1
+print("Using:", "GPU" if device == 0 else "CPU")</code></pre></div>
+  <div class="box"><strong>How a pipeline works:</strong> It converts input into model-ready values, runs the model, and converts raw predictions into readable Python dictionaries or text.</div>
+
+  <h2>4. Sentiment analysis</h2>
+  <p>Sentiment analysis classifies text as positive or negative and returns a confidence score.</p>
+  <div class="code"><div class="label">Colab cell 3 - Sentiment analysis</div><button>Copy</button><pre><code>sentiment = pipeline(
+    "sentiment-analysis",
+    model="distilbert/distilbert-base-uncased-finetuned-sst-2-english",
+    device=device,
+)
+
+sentiment("I enjoyed learning how Transformer pipelines work.")</code></pre></div>
+  <p>The result should be a list containing a label such as <code>POSITIVE</code> and a score between 0 and 1.</p>
+  <p>Pass multiple sentences in one call:</p>
+  <div class="code"><div class="label">Colab cell 4 - Batch input</div><button>Copy</button><pre><code>sentiment([
+    "The explanations were clear and helpful.",
+    "I found this lesson frustrating and confusing.",
+])</code></pre></div>
+  <p><span class="task">Try it</span> Replace both sentences with feedback from your own class or project.</p>
+
+  <h2>5. Zero-shot classification</h2>
+  <p>Zero-shot classification lets you supply labels at inference time instead of training a classifier for those exact categories.</p>
+  <div class="code"><div class="label">Colab cell 5 - Zero-shot classification</div><button>Copy</button><pre><code>zero_shot = pipeline(
+    "zero-shot-classification",
+    model="facebook/bart-large-mnli",
+    device=device,
+)
+
+zero_shot(
+    "This lesson explains how to use pretrained language models.",
+    candidate_labels=["education", "business", "sports", "politics"],
+)</code></pre></div>
+  <p>Inspect the order of <code>labels</code> and their <code>scores</code>. The highest-scoring label should be related to education.</p>
+  <div class="box tip"><strong>Teaching point:</strong> “Zero-shot” means the model was not fine-tuned using your exact list of labels. The labels are part of the request.</div>
+
+  <h2>6. Text generation with a Hub model</h2>
+  <p>Create a generation pipeline using the compact <code>HuggingFaceTB/SmolLM2-360M</code> model.</p>
+  <div class="code"><div class="label">Colab cell 6 - Text generation</div><button>Copy</button><pre><code>generator = pipeline(
+    "text-generation",
+    model="HuggingFaceTB/SmolLM2-360M",
+    device=device,
+)
+
+generator(
+    "In this course, students will learn how to",
+    max_new_tokens=30,
+    num_return_sequences=2,
+    do_sample=True,
+    temperature=0.8,
+)</code></pre></div>
+  <p>You should receive two completions. Their wording may differ each time because sampling introduces randomness.</p>
+  <p><span class="task">Try it</span> Change <code>temperature</code> to <code>0.2</code>, rerun the cell, and compare how conservative the output becomes.</p>
+
+  <h2>7. Fill a masked word</h2>
+  <p>A fill-mask model predicts likely words for a special mask token.</p>
+  <div class="code"><div class="label">Colab cell 7 - Mask filling</div><button>Copy</button><pre><code>unmasker = pipeline(
+    "fill-mask",
+    model="FacebookAI/roberta-base",
+    device=device,
+)
+
+unmasker(
+    "Transformer models can solve many &lt;mask&gt; tasks.",
+    top_k=3,
+)</code></pre></div>
+  <p>The result contains three candidate sequences, token strings, and scores.</p>
+  <div class="box warn"><strong>Model-specific token:</strong> RoBERTa uses <code>&lt;mask&gt;</code>. Other model families may use a different mask token, so check the model card or tokenizer.</div>
+
+  <h2>8. Named entity recognition</h2>
+  <p>Named entity recognition identifies spans representing people, organizations, locations, and other entity types.</p>
+  <div class="code"><div class="label">Colab cell 8 - Named entity recognition</div><button>Copy</button><pre><code>ner = pipeline(
+    "ner",
+    model="dslim/bert-base-NER",
+    aggregation_strategy="simple",
+    device=device,
+)
+
+ner("Asha works for Microsoft in Bengaluru and visits London in July.")</code></pre></div>
+  <p>Look for entity groups such as <code>PER</code>, <code>ORG</code>, and <code>LOC</code>. The aggregation strategy combines subword pieces into readable entities.</p>
+
+  <h2>9. Optional: image classification</h2>
+  <p>This step demonstrates that the pipeline API also supports images.</p>
+  <div class="code"><div class="label">Colab cell 9 - Image classification</div><button>Copy</button><pre><code>image_classifier = pipeline(
+    "image-classification",
+    model="google/vit-base-patch16-224",
+    device=device,
+)
+
+image_url = (
+    "https://huggingface.co/datasets/huggingface/documentation-images/"
+    "resolve/main/pipeline-cat-chonk.jpeg"
+)
+
+image_classifier(image_url)[:5]</code></pre></div>
+  <p>The output is a ranked list of image labels and scores. Predictions are model estimates and may not match the everyday label you expected.</p>
+
+  <h2>10. Optional: automatic speech recognition</h2>
+  <p>Use a compact Whisper checkpoint to transcribe a short audio file.</p>
+  <div class="code"><div class="label">Colab cell 10 - Speech recognition</div><button>Copy</button><pre><code>transcriber = pipeline(
+    "automatic-speech-recognition",
+    model="openai/whisper-tiny.en",
+    device=device,
+)
+
+audio_url = "https://huggingface.co/datasets/Narsil/asr_dummy/resolve/main/mlk.flac"
+transcriber(audio_url)</code></pre></div>
+  <p>The result should be a dictionary containing transcribed <code>text</code>.</p>
+
+  <h2>11. Compare the tasks</h2>
+  <p>Create a final Markdown cell in Colab and complete this table in your own words:</p>
+  <table>
+    <thead><tr><th>Pipeline</th><th>Input</th><th>Output</th><th>Key limitation</th></tr></thead>
+    <tbody>
+      <tr><td>Sentiment analysis</td><td>Text</td><td>Label and score</td><td>Uses the model's learned label scheme</td></tr>
+      <tr><td>Zero-shot classification</td><td>Text and candidate labels</td><td>Ranked labels</td><td>Scores depend heavily on label wording</td></tr>
+      <tr><td>Text generation</td><td>Prompt</td><td>Generated continuation</td><td>Can produce inaccurate text</td></tr>
+      <tr><td>Named entity recognition</td><td>Text</td><td>Entity spans and labels</td><td>Can miss or mislabel unfamiliar names</td></tr>
+    </tbody>
+  </table>
+
+  <h2>12. Save and submit the Colab notebook</h2>
+  <ol>
+    <li>Select <strong>Runtime &gt; Run all</strong> to confirm the notebook works from top to bottom.</li>
+    <li>Review the outputs and remove any failed experimental cells.</li>
+    <li>Select <strong>File &gt; Save</strong>.</li>
+    <li>To submit a file, select <strong>File &gt; Download &gt; Download .ipynb</strong>.</li>
+    <li>To share from Drive, select <strong>Share</strong> and choose the access level required by your instructor. Do not make private data public.</li>
+  </ol>
+
+  <h2>Troubleshooting</h2>
+  <table>
+    <thead><tr><th>Problem</th><th>Suggested action</th></tr></thead>
+    <tbody>
+      <tr><td>Colab disconnects or forgets variables</td><td>Reconnect and use <strong>Runtime &gt; Run all</strong>. Colab sessions are temporary.</td></tr>
+      <tr><td>CUDA out-of-memory error</td><td>Restart the runtime and run fewer models at once, or switch to CPU. Deleting a Python variable alone may not immediately release all GPU memory.</td></tr>
+      <tr><td>Model download is slow</td><td>Wait for the first download to finish. Do not repeatedly rerun the same loading cell.</td></tr>
+      <tr><td>Output differs from the example</td><td>Generation is nondeterministic and model versions can change. Check the output structure and task behavior rather than exact wording.</td></tr>
+      <tr><td>A model requires permission</td><td>Use a public alternative. This lab does not require a Hugging Face access token.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Cleanup</h2>
+  <ol>
+    <li>Select <strong>Runtime &gt; Disconnect and delete runtime</strong> to release the Colab CPU/GPU and memory.</li>
+    <li>Your notebook remains in Google Drive if you saved it there.</li>
+  </ol>
+
+  <div class="summary"><strong>Summary</strong><br>You used one high-level Transformers API to run classification, generation, token prediction, entity extraction, vision, and speech tasks. Each pipeline hides preprocessing and postprocessing, but selecting and evaluating the correct task and model remains the developer's responsibility.</div>
+</main>
+<script>
+async function copyText(text){if(navigator.clipboard){try{await navigator.clipboard.writeText(text);return}catch{}}const area=document.createElement("textarea");area.value=text;document.body.append(area);area.select();document.execCommand("copy");area.remove()}
+document.querySelectorAll("button").forEach(button=>button.addEventListener("click",async()=>{await copyText(button.nextElementSibling.innerText);button.textContent="Copied";setTimeout(()=>button.textContent="Copy",1200)}));
+</script>
+</body>
+</html>

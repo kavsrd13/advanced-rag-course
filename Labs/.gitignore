@@ -1,0 +1,9 @@
+.env
+**/.env
+**/.env.generated
+__pycache__/
+*.pyc
+03c_graph_rag/graph_db/
+.venv-foundry/
+.venv-lab01/
+Workshop_Admin/private/

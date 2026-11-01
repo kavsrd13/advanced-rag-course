@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>05 · Foundry agent with Foundry IQ retrieval</title>
+<style>
+    :root { color-scheme: light; --ink:#16304a; --muted:#52677a; --line:#d9e3eb; --blue:#075aa5; --pale:#edf5fc; --gold:#fff2d8; --green:#e8f5ef; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:#f7fafc; color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    a:focus-visible, button:focus-visible { outline:3px solid #ffab36; outline-offset:3px; }
+    header { background:linear-gradient(125deg,#102a43,#075aa5); color:#fff; padding:3.4rem max(1.25rem,calc((100% - 1100px)/2)); }
+    header .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-weight:700; color:#a9d6ff; font-size:.8rem; }
+    h1 { font-size:clamp(2rem,5vw,3.4rem); line-height:1.12; margin:.55rem 0 1rem; }
+    h2 { margin:0 0 .8rem; font-size:1.65rem; }
+    h3 { margin:1.5rem 0 .4rem; font-size:1.13rem; }
+    p { margin:.45rem 0 1rem; }
+    .lead { max-width:770px; font-size:1.14rem; color:#e5f3ff; }
+    .badges { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:1.5rem; }
+    .badge { border:1px solid #86b9e4; border-radius:99px; padding:.25rem .8rem; font-size:.88rem; }
+    .layout { max-width:1100px; margin:auto; padding:1.5rem; display:grid; grid-template-columns:220px minmax(0,1fr); gap:2rem; }
+    nav { position:sticky; top:1rem; align-self:start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:1rem; }
+    nav strong { display:block; margin-bottom:.5rem; }
+    nav a { display:block; padding:.36rem .1rem; text-decoration:none; font-size:.92rem; }
+    nav a:hover { text-decoration:underline; }
+    main { min-width:0; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1.5rem; margin-bottom:1.2rem; box-shadow:0 3px 15px #183b5809; }
+    .step { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:50%; background:#075aa5; color:#fff; font-weight:700; margin-right:.5rem; }
+    .callout { border-left:4px solid var(--blue); background:var(--pale); padding:.9rem 1rem; border-radius:0 8px 8px 0; margin:1rem 0; }
+    .callout.warn { border-color:#ba7900; background:var(--gold); }
+    .callout.good { border-color:#278058; background:var(--green); }
+    pre { overflow:auto; background:#102a43; color:#e8f4ff; border-radius:10px; padding:1rem; line-height:1.48; font-size:.9rem; }
+    code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    :not(pre)>code { background:#edf3f8; border-radius:4px; padding:.1rem .28rem; color:#173b61; }
+    table { border-collapse:collapse; width:100%; font-size:.94rem; }
+    th,td { border-bottom:1px solid var(--line); padding:.65rem; text-align:left; vertical-align:top; }
+    th { background:#f0f6fb; }
+    .scroll { overflow-x:auto; }
+    details { border:1px solid var(--line); border-radius:10px; padding:.7rem 1rem; margin:.7rem 0; }
+    summary { cursor:pointer; font-weight:700; }
+    details pre { max-height:440px; }
+    ol li, ul li { margin:.35rem 0; }
+    .filelinks { display:flex; flex-wrap:wrap; gap:.6rem; }
+    .filelinks a { display:inline-block; background:#e6f1fa; padding:.4rem .7rem; border-radius:7px; font-weight:600; }
+    footer { max-width:1100px; margin:0 auto 2rem; padding:0 1.5rem; color:var(--muted); font-size:.88rem; }
+    @media (max-width:780px) { .layout { display:block; padding:1rem; } nav { position:static; margin-bottom:1rem; } nav a { display:inline-block; margin-right:.8rem; } section { padding:1.1rem; } }
+  </style></head>
+<body>
+<header><div class="eyebrow">Advanced RAG course · Hands-on exercise 05</div>
+<h1>Foundry agent with Foundry IQ retrieval</h1><p class="lead">Create two knowledge sources, guide Foundry IQ’s query planning, connect its MCP tool to a Foundry agent, and inspect the actual retrieval trace.</p>
+<div class="badges"><span class="badge">PowerShell on Windows</span><span class="badge">Python 3.11</span>
+<span class="badge">Foundry IQ preview + MCP tool</span></div></header>
+<div class="layout"><nav aria-label="Exercise steps"><strong>Follow in order</strong><a href="#goal">Goal</a><a href="#prereq">1. Prerequisites</a><a href="#python">2. Python environment</a><a href="#azure">3. Azure resources</a><a href="#config">4. Configure</a><a href="#scripts">5. Understand scripts</a><a href="#run">6. Run in order</a><a href="#test">7. Test prompts</a><a href="#cleanup">8. Clean up</a></nav>
+<main><section id="goal"><h2>What you will learn</h2><p>Scenario: a support analyst asks why X200 E-4012 incidents fell and which firmware fixes the problem. The operations report supplies cause and trend; the manual supplies recovery. The knowledge base’s <code>retrievalInstructions</code> guide which source to query. The agent’s instructions require a <code>knowledge_base_retrieve</code> tool call before answering. These are two distinct instruction layers.</p><div class="callout warn">This lab uses the <code>2026-08-01-preview</code> Foundry IQ Search API. It demonstrates agentic retrieval and citations, not user-specific document authorization.</div></section><section id="prereq"><h2><span class="step">1</span>Check prerequisites</h2><p>Have Python 3.11, Azure CLI, both source PDFs, a Basic-or-higher Search service, a Foundry project with <code>gpt-5-mini</code>, and role-assignment permission for the project and Search identities. Use a dedicated project and Search service for this lab’s fixed names. See the <a href="./README.md">Lab 05 notes</a>.</p></section><section id="python"><h2><span class="step">2</span>Create the Python environment</h2><p>Use a separate environment for the Foundry Agent SDK. Its OpenAI 3.x dependency differs from the older SDK pinned for the other lessons.</p><pre><code>python --version
+python -m venv .venv-foundry
+.\.venv-foundry\Scripts\python.exe -m pip install -r .\05_agentic_rag_with_tools\requirements.txt
+.\.venv-foundry\Scripts\python.exe -m pip check</code></pre><p>Expect <code>No broken requirements found</code>.</p></section><section id="azure"><h2><span class="step">3</span>Create or reuse Azure resources</h2><p>Choose one route. Route A creates separate resources in your own student resource group. Route B uses resources already assigned to you. Run all commands from the course <code>Labs</code> folder.</p><h3>Route A · Create student resources</h3><p>Use a unique lowercase tag of 3–8 letters or digits. The setup script creates a Search service, Foundry resource and project, chat and embedding deployments, and Storage for the course. Model availability and quota vary by subscription.</p><pre><code>az login
+az account set --subscription &quot;&lt;subscription-id&gt;&quot;
+az account show --query &quot;{subscription:id,name:name}&quot; --output table
+.\00_setup_environment\setup.ps1 -StudentTag s01</code></pre><p>Replace <code>s01</code> with your assigned tag. The script writes endpoints and keys to <code>00_setup_environment/.env.generated</code>. Check for <code>Setup complete</code> before continuing. See the <a href="../00_setup_environment/lab_00_exercise.html">Lab 00 setup exercise</a>.</p><h3>Route B · Use assigned resources</h3><p>Use your own Search service, Foundry project, and model deployment. You need index creation and upload access plus the identity roles below. Copy the actual connection values into this lab’s <code>.env</code>. Never copy another student’s key file.</p><div class="callout warn">Lab 05 uses fixed knowledge-base and agent names. Use your own Search service and Foundry project so other students do not overwrite your objects.</div><h3>Grant the three identities their required roles</h3><p>An instructor or owner with role-assignment rights should run this once after resource creation. Replace the names with yours. Role assignments can take a few minutes to propagate.</p><pre><code>$resourceGroup = &quot;&lt;your-student-resource-group&gt;&quot;
+$searchName = &quot;&lt;your-search-service&gt;&quot;
+$foundryName = &quot;&lt;your-foundry-resource&gt;&quot;
+$projectName = &quot;rag-course&quot;
+az search service update --name $searchName --resource-group $resourceGroup --identity-type SystemAssigned --output none
+$searchId = az search service show --name $searchName --resource-group $resourceGroup --query id --output tsv
+$searchPrincipal = az search service show --name $searchName --resource-group $resourceGroup --query identity.principalId --output tsv
+$foundryId = az cognitiveservices account show --name $foundryName --resource-group $resourceGroup --query id --output tsv
+$projectPrincipal = az cognitiveservices account project show --name $foundryName --resource-group $resourceGroup --project-name $projectName --query identity.principalId --output tsv
+$studentObjectId = az ad signed-in-user show --query id --output tsv
+az role assignment create --assignee-object-id $searchPrincipal --assignee-principal-type ServicePrincipal --role &quot;Cognitive Services User&quot; --scope $foundryId
+az role assignment create --assignee-object-id $projectPrincipal --assignee-principal-type ServicePrincipal --role &quot;Search Index Data Reader&quot; --scope $searchId
+az role assignment create --assignee-object-id $studentObjectId --assignee-principal-type User --role &quot;Foundry User&quot; --scope $foundryId
+az role assignment create --assignee-object-id $studentObjectId --assignee-principal-type User --role &quot;Foundry Project Manager&quot; --scope $foundryId</code></pre><p>Search’s identity calls the Foundry model for planning; the project identity reads Search through MCP; the signed-in student creates and runs the prompt agent. If a role assignment already exists, verify it instead of creating a duplicate.</p></section><section id="config"><h2><span class="step">4</span>Configure this lab</h2><h3>After Route A</h3><p>Copy generated values and add this lesson’s index names. The <code>.env</code> file contains keys; do not publish or screenshot it.</p><pre><code>Copy-Item .\00_setup_environment\.env.generated &quot;.\05_agentic_rag_with_tools\.env&quot; -Force</code></pre><h3>After Route B</h3><p>Create or edit this lab’s <code>.env</code> with your assigned values:</p><pre><code>AZURE_SEARCH_ENDPOINT=https://&lt;search-service&gt;.search.windows.net
+AZURE_SEARCH_API_KEY=&lt;search-admin-key&gt;
+AIPROJECT_ENDPOINT=https://&lt;foundry-resource&gt;.services.ai.azure.com/api/projects/rag-course
+FOUNDRY_PROJECT_RESOURCE_ID=/subscriptions/&lt;subscription-id&gt;/resourceGroups/&lt;resource-group&gt;/providers/Microsoft.CognitiveServices/accounts/&lt;foundry-resource&gt;/projects/rag-course
+AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com
+AZURE_OPENAI_DEPLOYMENT=gpt-5-mini</code></pre><p>The deployment names and index names in your file must match the resources you use. The setup script creates Search sources, a knowledge base, and the Foundry agent.</p></section><section id="scripts"><h2><span class="step">5</span>Understand the code</h2><h3><a href="./build_index.py">build_index.py</a></h3><ol><li><strong>Source indexes:</strong> chunk the operations PDF and X200 manual into separate Search indexes with semantic configurations.</li><li><strong>Knowledge sources:</strong> give each index a description so the planner knows when to use it.</li><li><strong>Knowledge base:</strong> set low reasoning effort and <code>retrievalInstructions</code> to route cause/trend to operations and recovery to the manual.</li><li><strong>Connection and agent:</strong> create a project RemoteTool connection to the knowledge base MCP endpoint and a prompt agent that must call <code>knowledge_base_retrieve</code>.</li></ol><details><summary>Read the complete embedded build_index.py source</summary><pre><code>&quot;&quot;&quot;Build two indexed knowledge sources, a Foundry IQ base, and a prompt agent.&quot;&quot;&quot;
+import os
+import sys
+from pathlib import Path
+
+import requests
+from azure.ai.projects import AIProjectClient
+from azure.ai.projects.models import MCPTool, PromptAgentDefinition
+from azure.core.credentials import AzureKeyCredential
+from azure.identity import AzureCliCredential
+from azure.search.documents import SearchClient
+from azure.search.documents.indexes import SearchIndexClient
+from azure.search.documents.indexes.models import (
+    SearchIndex, SearchableField, SimpleField, SearchFieldDataType,
+    SemanticConfiguration, SemanticField, SemanticPrioritizedFields, SemanticSearch,
+)
+from dotenv import load_dotenv
+from pypdf import PdfReader
+
+HERE = Path(__file__).resolve().parent
+load_dotenv(HERE / &quot;.env&quot;, override=True)
+SEARCH = os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;].rstrip(&quot;/&quot;)
+PROJECT = os.environ[&quot;AIPROJECT_ENDPOINT&quot;]
+PROJECT_ID = os.environ[&quot;FOUNDRY_PROJECT_RESOURCE_ID&quot;]
+MODEL = os.environ[&quot;AZURE_OPENAI_DEPLOYMENT&quot;]
+KEY = os.environ[&quot;AZURE_SEARCH_API_KEY&quot;]
+VERSION = &quot;2026-08-01-preview&quot;
+KB = &quot;rag-05-incident-kb&quot;
+AGENT = &quot;rag-05-incident-agent&quot;
+CONNECTION = &quot;rag-05-iq-connection&quot;
+SOURCES = [
+    (&quot;OPS-Q2-2026&quot;, &quot;04_Q2_Operations_and_Incident_Review&quot;, &quot;rag-05-operations&quot;, &quot;rag-05-operations-source&quot;,
+     &quot;Operations review: incident cause, symptoms, impact, and trend.&quot;),
+    (&quot;MAN-X200&quot;, &quot;03_X200_Service_Manual_and_Troubleshooting&quot;, &quot;rag-05-manual&quot;, &quot;rag-05-manual-source&quot;,
+     &quot;X200 manual: E-4012 recovery steps and firmware fix.&quot;),
+]
+
+
+def put_search(path, body):
+    response = requests.put(
+        f&quot;{SEARCH}/{path}?api-version={VERSION}&quot;,
+        headers={&quot;api-key&quot;: KEY}, json=body, timeout=60,
+    )
+    response.raise_for_status()
+
+
+def main():
+    index_client = SearchIndexClient(SEARCH, AzureKeyCredential(KEY))
+    for policy_id, filename, index_name, source_name, description in SOURCES:
+        index_client.create_or_update_index(SearchIndex(
+            name=index_name, description=description,
+            fields=[
+                SimpleField(name=&quot;id&quot;, type=SearchFieldDataType.String, key=True),
+                SearchableField(name=&quot;policyId&quot;, type=SearchFieldDataType.String),
+                SearchableField(name=&quot;title&quot;, type=SearchFieldDataType.String),
+                SearchableField(name=&quot;content&quot;, type=SearchFieldDataType.String),
+                SimpleField(name=&quot;page&quot;, type=SearchFieldDataType.Int32),
+            ],
+            semantic_search=SemanticSearch(configurations=[SemanticConfiguration(
+                name=&quot;rag-semantic-config&quot;,
+                prioritized_fields=SemanticPrioritizedFields(
+                    title_field=SemanticField(field_name=&quot;title&quot;),
+                    content_fields=[SemanticField(field_name=&quot;content&quot;)],
+                ),
+            )]),
+        ))
+        pages = PdfReader(HERE.parent / &quot;Knowledge Base&quot; / &quot;PDF_Files&quot; / f&quot;{filename}.pdf&quot;).pages
+        chunks = [
+            {&quot;id&quot;: f&quot;{policy_id}-{page_no}-{start}&quot;, &quot;policyId&quot;: policy_id,
+             &quot;title&quot;: policy_id, &quot;content&quot;: text[start:start + 1300], &quot;page&quot;: page_no}
+            for page_no, page in enumerate(pages, 1)
+            for text in [page.extract_text() or &quot;&quot;]
+            for start in range(0, len(text), 1100)
+        ]
+        SearchClient(SEARCH, index_name, AzureKeyCredential(KEY)).upload_documents(chunks)
+        put_search(f&quot;knowledgesources/{source_name}&quot;, {
+            &quot;name&quot;: source_name, &quot;kind&quot;: &quot;searchIndex&quot;, &quot;description&quot;: description,
+            &quot;searchIndexParameters&quot;: {
+                &quot;searchIndexName&quot;: index_name,
+                &quot;semanticConfigurationName&quot;: &quot;rag-semantic-config&quot;,
+                &quot;sourceDataFields&quot;: [{&quot;name&quot;: name} for name in (&quot;id&quot;, &quot;policyId&quot;, &quot;page&quot;)],
+            },
+        })
+        print(&quot;SOURCE:&quot;, source_name, &quot;| CHUNKS:&quot;, len(chunks))
+
+    put_search(f&quot;knowledgebases/{KB}&quot;, {
+        &quot;name&quot;: KB,
+        &quot;knowledgeSources&quot;: [{&quot;name&quot;: name} for _, _, _, name, _ in SOURCES],
+        &quot;models&quot;: [{&quot;kind&quot;: &quot;azureOpenAI&quot;, &quot;azureOpenAIParameters&quot;: {
+            &quot;resourceUri&quot;: os.environ[&quot;AZURE_OPENAI_ENDPOINT&quot;].rstrip(&quot;/&quot;),
+            &quot;deploymentId&quot;: MODEL, &quot;modelName&quot;: MODEL,
+        }}],
+        &quot;outputMode&quot;: &quot;extractiveData&quot;,
+        &quot;retrievalReasoningEffort&quot;: {&quot;kind&quot;: &quot;low&quot;},
+        &quot;retrievalInstructions&quot;: (
+            &quot;Use operations for E-4012 cause, symptoms and incident trends. &quot;
+            &quot;Use the X200 manual for recovery and firmware fixes. &quot;
+            &quot;For questions combining cause and fix, search both sources. &quot;
+            &quot;Preserve policy IDs and pages in citations.&quot;
+        ),
+    })
+    mcp_url = f&quot;{SEARCH}/knowledgebases/{KB}/mcp?api-version={VERSION}&quot;
+    print(&quot;KNOWLEDGE BASE:&quot;, KB)
+
+    create_agent()
+
+
+def create_agent():
+    mcp_url = f&quot;{SEARCH}/knowledgebases/{KB}/mcp?api-version={VERSION}&quot;
+    credential = AzureCliCredential()
+    token = credential.get_token(&quot;https://management.azure.com/.default&quot;).token
+    response = requests.put(
+        f&quot;https://management.azure.com{PROJECT_ID}/connections/{CONNECTION}?api-version=2025-10-01-preview&quot;,
+        headers={&quot;Authorization&quot;: f&quot;Bearer {token}&quot;},
+        json={&quot;name&quot;: CONNECTION, &quot;type&quot;: &quot;Microsoft.MachineLearningServices/workspaces/connections&quot;,
+              &quot;properties&quot;: {&quot;authType&quot;: &quot;ProjectManagedIdentity&quot;, &quot;category&quot;: &quot;RemoteTool&quot;,
+                             &quot;target&quot;: mcp_url, &quot;isSharedToAll&quot;: True,
+                             &quot;audience&quot;: &quot;https://search.azure.com/&quot;, &quot;metadata&quot;: {&quot;ApiType&quot;: &quot;Azure&quot;}}},
+        timeout=60,
+    )
+    response.raise_for_status()
+    print(&quot;PROJECT CONNECTION:&quot;, CONNECTION)
+    agent = AIProjectClient(endpoint=PROJECT, credential=credential).agents.create_version(
+        agent_name=AGENT,
+        definition=PromptAgentDefinition(
+            model=MODEL,
+            instructions=(
+                &quot;You are an X200 incident support agent. Call knowledge_base_retrieve &quot;
+                &quot;for every question. For cause and fix questions, ask it to search &quot;
+                &quot;both operations and manual. Answer only from retrieved evidence, &quot;
+                &quot;include its source citations, and say when evidence is missing.&quot;
+            ),
+            tools=[MCPTool(server_label=&quot;incident-knowledge&quot;, server_url=mcp_url,
+                           require_approval=&quot;never&quot;, allowed_tools=[&quot;knowledge_base_retrieve&quot;],
+                           project_connection_id=CONNECTION)],
+        ),
+    )
+    print(&quot;AGENT:&quot;, agent.name, &quot;| VERSION:&quot;, agent.version)
+
+
+if __name__ == &quot;__main__&quot;:
+    create_agent() if &quot;--agent-only&quot; in sys.argv else main()
+</code></pre></details><h3><a href="./inspect_retrieval.py">inspect_retrieval.py</a></h3><ol><li><strong>Direct retrieve request:</strong> send a user question to the knowledge base with <code>includeActivity</code>.</li><li><strong>Trace:</strong> print each chosen knowledge source and the query Foundry IQ generated, plus returned evidence IDs.</li></ol><details><summary>Read the complete embedded inspect_retrieval.py source</summary><pre><code>&quot;&quot;&quot;Show which knowledge sources Foundry IQ selected for a question.&quot;&quot;&quot;
+import json
+import os
+import sys
+from pathlib import Path
+
+import requests
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).with_name(&quot;.env&quot;), override=True)
+question = &quot; &quot;.join(sys.argv[1:]) or &quot;What caused E-4012 and how do I fix it?&quot;
+search = os.environ[&quot;AZURE_SEARCH_ENDPOINT&quot;].rstrip(&quot;/&quot;)
+response = requests.post(
+    f&quot;{search}/knowledgebases/rag-05-incident-kb/retrieve?api-version=2026-08-01-preview&quot;,
+    headers={&quot;api-key&quot;: os.environ[&quot;AZURE_SEARCH_API_KEY&quot;]},
+    json={&quot;messages&quot;: [{&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: [{&quot;type&quot;: &quot;text&quot;, &quot;text&quot;: question}]}],
+          &quot;includeActivity&quot;: True},
+    timeout=120,
+)
+response.raise_for_status()
+result = response.json()
+print(&quot;QUESTION:&quot;, question)
+for step in result[&quot;activity&quot;]:
+    if step[&quot;type&quot;] == &quot;searchIndex&quot;:
+        print(&quot;SOURCE:&quot;, step[&quot;knowledgeSourceName&quot;],
+              &quot;| QUERY:&quot;, step[&quot;searchIndexArguments&quot;][&quot;search&quot;])
+documents = json.loads(result[&quot;response&quot;][0][&quot;content&quot;][0][&quot;text&quot;])
+print(&quot;EVIDENCE:&quot;, &quot;, &quot;.join(dict.fromkeys(item[&quot;title&quot;] for item in documents)))
+</code></pre></details><h3><a href="./rag_app.py">rag_app.py</a></h3><ol><li><strong>Agent client:</strong> authenticate with Azure CLI and open the named agent through the project.</li><li><strong>Required tool call:</strong> ask a question with <code>tool_choice="required"</code>.</li><li><strong>Result:</strong> print the MCP call status and final cited answer.</li></ol><details><summary>Read the complete embedded rag_app.py source</summary><pre><code>&quot;&quot;&quot;Ask the Foundry agent, which calls Foundry IQ&#x27;s retrieval tool.&quot;&quot;&quot;
+import os
+import sys
+from pathlib import Path
+
+from azure.ai.projects import AIProjectClient
+from azure.identity import AzureCliCredential
+from dotenv import load_dotenv
+
+load_dotenv(Path(__file__).with_name(&quot;.env&quot;), override=True)
+
+
+def main():
+    sys.stdout.reconfigure(encoding=&quot;utf-8&quot;)
+    question = &quot; &quot;.join(sys.argv[1:]) or (
+        &quot;What caused X200 error E-4012, how did incidents change, &quot;
+        &quot;and which firmware fixes it?&quot;
+    )
+    project = AIProjectClient(
+        endpoint=os.environ[&quot;AIPROJECT_ENDPOINT&quot;], credential=AzureCliCredential()
+    )
+    client = project.get_openai_client(agent_name=&quot;rag-05-incident-agent&quot;)
+    response = client.responses.create(input=question, tool_choice=&quot;required&quot;)
+    print(&quot;QUESTION:&quot;, question)
+    for item in response.output:
+        if item.type == &quot;mcp_call&quot;:
+            print(&quot;KNOWLEDGE TOOL:&quot;, item.name, &quot;| STATUS:&quot;, item.status)
+    print(&quot;\nANSWER\n&quot;, response.output_text)
+
+
+if __name__ == &quot;__main__&quot;:
+    main()
+</code></pre></details></section><section id="run"><h2><span class="step">6</span>Run the scripts in order</h2><h3>Create indexes, sources, knowledge base, connection, and agent</h3><pre><code>.\.venv-foundry\Scripts\python.exe .\05_agentic_rag_with_tools\build_index.py</code></pre><h3>See Foundry IQ’s source choices</h3><pre><code>.\.venv-foundry\Scripts\python.exe .\05_agentic_rag_with_tools\inspect_retrieval.py</code></pre><h3>Ask the Foundry agent</h3><pre><code>.\.venv-foundry\Scripts\python.exe .\05_agentic_rag_with_tools\rag_app.py</code></pre><h3>Compare a manual-only question</h3><pre><code>.\.venv-foundry\Scripts\python.exe .\05_agentic_rag_with_tools\inspect_retrieval.py &quot;According to the X200 manual, what are the exact recovery steps for E-4012?&quot;</code></pre><p>Expect the combined question to query both <code>rag-05-operations-source</code> and <code>rag-05-manual-source</code>. The agent output should show <code>knowledge_base_retrieve | completed</code> and cite both documents. A manual-only question should query the manual source. If roles were just assigned, wait for propagation before retrying <code>build_index.py --agent-only</code>.</p></section><section id="test"><h2><span class="step">7</span>Test and explain the result</h2><p>Run these prompts using the interface shown above. Model wording and ranking may vary; compare the listed sources, routing trace, scores, and citations against the expected observation.</p><div class="scroll"><table><thead><tr><th>Prompt or learner change</th><th>What to inspect</th></tr></thead><tbody><tr><td>What caused X200 error E-4012, how did incidents change, and which firmware fixes it?</td><td>Both sources should be queried; answer should cite OPS-Q2-2026 and MAN-X200.</td></tr><tr><td>Which firmware fixes E-4012 according to the X200 manual?</td><td>The manual source should dominate and point to firmware 3.2.1 or later.</td></tr><tr><td>What did the Q2 operations review report about X200 incidents?</td><td>The operations source should supply the April–June trend.</td></tr></tbody></table></div></section><section id="cleanup"><h2><span class="step">8</span>Delete what you created</h2><h3>If you created a dedicated student resource group</h3><p>Wait until you have finished every lab that uses it. Confirm the selected subscription and your exact group name, then delete that group. This removes its Search, Foundry, Storage, models, indexes, and data.</p><pre><code>az account set --subscription &quot;&lt;subscription-id&gt;&quot;
+az group list --query &quot;[?starts_with(name, &#x27;rg-rag-&#x27;)].name&quot; --output table
+az group delete --name &quot;&lt;your-exact-student-resource-group&gt;&quot; --yes</code></pre><div class="callout warn">Delete only the group created with your student tag. Group deletion is irreversible.</div><h3>If you reused assigned resources</h3><p>Use Azure Portal to delete your own <code>rag-05-incident-agent</code> in Foundry, then the <code>rag-05-iq-connection</code> project connection. In the Search service, delete <code>rag-05-incident-kb</code>, both <code>rag-05-*-source</code> knowledge sources, and indexes <code>rag-05-operations</code> and <code>rag-05-manual</code>, in that order. Keep shared services and model deployments. These names are fixed in the teaching code, so do not share them with another student.</p></section><section id="references"><h2>Reference documentation</h2><ul><li><a href="https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-how-to-create-pipeline">End-to-end Foundry IQ agentic retrieval</a></li><li><a href="https://learn.microsoft.com/en-us/azure/search/agentic-retrieval-how-to-create-knowledge-base">Knowledge base instructions</a></li><li><a href="https://learn.microsoft.com/en-us/azure/foundry/agents/how-to/foundry-iq-connect">Connect an agent to Foundry IQ</a></li><li><a href="https://learn.microsoft.com/en-us/azure/foundry/concepts/rbac-foundry">Foundry RBAC</a></li><li><a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/delete-resource-group">Delete a resource group</a></li></ul></section></main></div>
+<footer>05 · Fictional course documents. Run commands from the course Labs folder. <a href="../README.md">Course index</a></footer>
+</body></html>

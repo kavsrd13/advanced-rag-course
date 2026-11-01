@@ -1,0 +1,7 @@
+sourceFile,documentId,title,owner,version,effectiveDate,classification,status,product,allowedUsers
+01_IT_Security_and_Access_Standard_v2,SEC-114,IT Security and Access Standard,Cybersecurity,2.0,2026-07-01,Internal,Current,,alice|bob
+02_Remote_Work_and_Data_Handling_Policy,HR-REM-220,Remote Work and Data Handling Policy,People Operations,3.1,2026-08-15,Internal,Current,,alice|bob
+03_X200_Service_Manual_and_Troubleshooting,MAN-X200,ContosoPrint X200 Service Manual,Product Engineering,4.2,2026-09-02,Public,Current,ContosoPrint X200,all
+04_Q2_Operations_and_Incident_Review,OPS-Q2-2026,Q2 Operations and Incident Review,Service Operations,1.0,2026-07-10,Confidential,Current,ContosoPrint X200,bob
+05_Northwind_Acquisition_and_Leadership_Brief,MNA-26-03,Northwind Devices Acquisition Brief,Corporate Strategy,1.1,2026-03-22,Confidential,Current,ContosoPrint X200,bob
+06_RAG_Governance_Evaluation_and_Security_Guide,AI-GOV-310,RAG Governance Evaluation and Security Guide,AI Governance Council,1.0,2026-10-05,Internal,Current,,alice|bob

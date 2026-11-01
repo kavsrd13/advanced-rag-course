@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AI course · Exercise instructions</title>
+  <style>
+    :root { color-scheme: light; --ink:#14243d; --muted:#52657a; --line:#d9e3eb; --navy:#102641; --blue:#095eaf; --soft:#f3f7fb; --hf:#fff4cc; --foundry:#eaf3ff; --rag:#eaf7f0; --agents:#f3edff; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:#f7fafc; font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    a:focus-visible { outline:3px solid #e28a00; outline-offset:3px; border-radius:3px; }
+    header { color:#fff; background:linear-gradient(120deg,#102641,#0e67a6); padding:3.3rem max(1.25rem,calc((100% - 1100px)/2)); }
+    header p { max-width:790px; color:#e4f1ff; font-size:1.15rem; }
+    .eyebrow { margin:0; color:#acd9ff; font-size:.8rem; font-weight:750; letter-spacing:.14em; text-transform:uppercase; }
+    h1 { margin:.45rem 0 .8rem; font-size:clamp(2.2rem,5vw,3.6rem); line-height:1.12; }
+    h2 { margin:0 0 .3rem; font-size:1.7rem; }
+    h3 { margin:0 0 .3rem; font-size:1.08rem; }
+    p { margin:.35rem 0 .85rem; }
+    .wrap { max-width:1100px; margin:auto; padding:1.5rem; }
+    .jump { display:flex; flex-wrap:wrap; gap:.6rem; margin:.2rem 0 1.5rem; }
+    .jump a { padding:.5rem .8rem; border:1px solid var(--line); border-radius:999px; background:#fff; font-weight:650; text-decoration:none; }
+    .jump a:hover, .card a:hover { text-decoration:underline; }
+    .note { border:1px solid #c3d9eb; border-left:5px solid var(--blue); border-radius:10px; background:#edf6ff; padding:1rem 1.2rem; margin:1rem 0 1.6rem; }
+    .note strong { display:block; margin-bottom:.2rem; }
+    .stage { background:#fff; border:1px solid var(--line); border-radius:18px; padding:1.5rem; margin:1.25rem 0; box-shadow:0 4px 18px #14345109; }
+    .stage-heading { display:flex; align-items:flex-start; gap:.8rem; margin-bottom:1rem; }
+    .stage-number { flex:none; width:2.3rem; height:2.3rem; display:grid; place-items:center; border-radius:50%; background:var(--navy); color:#fff; font-weight:750; }
+    .stage-intro { color:var(--muted); max-width:820px; }
+    .cards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:.75rem; }
+    .card { border:1px solid var(--line); border-radius:12px; padding:1rem; background:var(--soft); min-width:0; }
+    .card.hf { background:var(--hf); }
+    .card.foundry { background:var(--foundry); }
+    .card.rag { background:var(--rag); }
+    .card.agents { background:var(--agents); }
+    .card .num { font-size:.76rem; font-weight:750; letter-spacing:.08em; text-transform:uppercase; color:#4b5f75; }
+    .card a { font-weight:750; text-decoration:none; }
+    .card p { color:#40546b; font-size:.93rem; margin:.25rem 0 0; }
+    details { margin-top:1.2rem; border:1px solid var(--line); border-radius:12px; padding:.7rem 1rem; background:#fbfdff; }
+    summary { cursor:pointer; font-weight:750; }
+    details p { color:var(--muted); }
+    .optional { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:.7rem; }
+    .optional a { display:block; padding:.75rem; border:1px solid var(--line); border-radius:9px; background:#fff; font-weight:650; }
+    footer { color:var(--muted); font-size:.9rem; padding:1rem 0 2rem; }
+    @media(max-width:700px) { .cards,.optional { grid-template-columns:1fr; } .stage { padding:1.1rem; } }
+    @media print { body { background:#fff; } header { background:#fff; color:var(--ink); padding:1rem 0; } header p,.eyebrow { color:var(--ink); } .wrap { padding:0; } .stage { break-inside:avoid; box-shadow:none; } }
+  </style>
+</head>
+<body>
+<header>
+  <p class="eyebrow">AI teaching labs · Course exercise index</p>
+  <h1>From Transformer models to RAG and agents</h1>
+  <p>Follow the four stages in order. Each card opens the complete exercise. Course numbers below show the teaching sequence; original lab numbers and Microsoft exercise numbers remain in their source pages.</p>
+</header>
+<div class="wrap">
+  <nav class="jump" aria-label="Jump to course stage">
+    <a href="#hugging-face">1 · Hugging Face</a>
+    <a href="#foundry">2 · Foundry and GenAI apps</a>
+    <a href="#rag">3 · RAG patterns</a>
+    <a href="#agents">4 · Agents</a>
+  </nav>
+
+  <aside class="note">
+    <strong>Prepare environments and resources</strong>
+    The Hugging Face exercises use Google Colab. The Microsoft-hosted Foundry and agent exercises currently describe Python 3.13, while the local RAG labs use Python 3.11 and their own pinned dependencies. Use separate virtual environments. If later exercises reuse an Azure resource group, keep it until those exercises are complete, then follow the cleanup steps for resources you own.
+  </aside>
+
+  <section class="stage" id="hugging-face" aria-labelledby="hugging-face-title">
+    <div class="stage-heading"><span class="stage-number">1</span><div><h2 id="hugging-face-title">Hugging Face foundations</h2><p class="stage-intro">Start with a high-level Transformer pipeline, then unpack tokenization, tensors, logits, and predictions.</p></div></div>
+    <div class="cards">
+      <article class="card hf"><div class="num">Course 01 · Local HTML</div><h3><a href="Exercise_1.html">Explore Transformer pipelines</a></h3><p>Try sentiment, zero-shot classification, generation, mask filling, and entity recognition, with optional image or audio tasks in Colab.</p></article>
+      <article class="card hf"><div class="num">Course 02 · Local HTML + notebook</div><h3><a href="Exercise_02.html">Behind a sentiment pipeline</a></h3><p>Rebuild a pipeline step by step. The linked <a href="behind_transformers_pipeline.ipynb">notebook</a> is included in this folder.</p></article>
+    </div>
+  </section>
+
+  <section class="stage" id="foundry" aria-labelledby="foundry-title">
+    <div class="stage-heading"><span class="stage-number">2</span><div><h2 id="foundry-title">Microsoft Foundry and GenAI apps</h2><p class="stage-intro">Create a project, choose and evaluate models, build a chat app, add managed tools, and inspect guardrails. The tools exercise leads naturally into custom RAG.</p></div></div>
+    <div class="cards">
+      <article class="card foundry"><div class="num">Course 03 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-studio/Instructions/Exercises/01-Explore-ai-studio.html">Prepare for an AI development project</a></h3><p>Create a Foundry project, deploy a model, and identify resource and project endpoints.</p></article>
+      <article class="card foundry"><div class="num">Course 04 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-studio/Instructions/Exercises/02-model-catalog-evaluation.html">Explore and compare models</a></h3><p>Use the catalog, leaderboard, playground, and a synthetic evaluation dataset.</p></article>
+      <article class="card foundry"><div class="num">Course 05 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-studio/Instructions/Exercises/03-foundry-sdk.html">Create a generative AI chat app</a></h3><p>Use the OpenAI SDK, Chat Completions, Responses, conversation history, and streaming.</p></article>
+      <article class="card foundry"><div class="num">Course 06 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-studio/Instructions/Exercises/04a-use-own-data.html">Create a generative AI app that uses tools</a></h3><p>Try <code>web_search</code> and <code>file_search</code> before building retrieval yourself.</p></article>
+      <article class="card foundry"><div class="num">Course 07 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-studio/Instructions/Exercises/06-Explore-content-filters.html">Apply guardrails to prevent harmful output</a></h3><p>Compare default and custom content filtering in Foundry.</p></article>
+    </div>
+  </section>
+
+  <section class="stage" id="rag" aria-labelledby="rag-title">
+    <div class="stage-heading"><span class="stage-number">3</span><div><h2 id="rag-title">RAG patterns, from basic to agentic retrieval</h2><p class="stage-intro">These are the course's local HTML exercises. Run Lab 00 once if you need your own Azure resources. Each lesson explains its scripts, commands, prompts, and cleanup. Lab 03A is absent from this checkout; the original lab labels are retained.</p></div></div>
+    <div class="cards">
+      <article class="card rag"><div class="num">Course 08 · RAG Lab 00</div><h3><a href="lab_00_exercise.html">Set up the Azure environment</a></h3><p>Create or reuse Search, Foundry, Storage, and model deployments.</p></article>
+      <article class="card rag"><div class="num">Course 09 · RAG Lab 01</div><h3><a href="lab_01_exercise.html">User-aware keyword RAG</a></h3><p>Compare simulated Alice and Bob sign-ins in Gradio; filter inaccessible passages before generation.</p></article>
+      <article class="card rag"><div class="num">Course 10 · RAG Lab 01.1</div><h3><a href="lab_01_1_exercise.html">Semantic-only RAG</a></h3><p>Build a local vector index and rank passages with cosine similarity.</p></article>
+      <article class="card rag"><div class="num">Course 11 · RAG Lab 02</div><h3><a href="lab_02_exercise.html">Hybrid retrieval and metadata filtering</a></h3><p>Combine keyword and vector search; inspect the filter's effect on recall.</p></article>
+      <article class="card rag"><div class="num">Course 12 · RAG Lab 02.1</div><h3><a href="lab_02_1_exercise.html">Hybrid RAG with semantic reranking</a></h3><p>Reuse Lab 02's index and compare candidate order before generation.</p></article>
+      <article class="card rag"><div class="num">Course 13 · RAG Lab 03B</div><h3><a href="lab_03b_exercise.html">Hierarchical RAG</a></h3><p>Route through document summaries, then answer from leaf passages.</p></article>
+      <article class="card rag"><div class="num">Course 14 · RAG Lab 03C</div><h3><a href="lab_03c_exercise.html">Graph-guided RAG</a></h3><p>Use graph relationships to select source documents before passage retrieval.</p></article>
+      <article class="card rag"><div class="num">Course 15 · RAG Lab 04</div><h3><a href="lab_04_exercise.html">Adaptive and corrective RAG</a></h3><p>Inspect routing, evidence grading, query rewriting, and retry behavior.</p></article>
+      <article class="card rag"><div class="num">Course 16 · RAG Lab 05</div><h3><a href="lab_05_exercise.html">Agentic RAG with Foundry IQ tools</a></h3><p>Inspect knowledge source selection, retrieval instructions, MCP tool calls, and citations.</p></article>
+    </div>
+    <details>
+      <summary>Further RAG practice: evaluation, architecture, and capstone</summary>
+      <p>These local pages are available after the core RAG path. They are optional in this sequence and can also be used as follow-up exercises after the agent labs.</p>
+      <div class="optional">
+        <a href="lab_06_exercise.html">RAG Lab 06 · Evaluation, traces, and security</a>
+        <a href="lab_07_exercise.html">RAG Lab 07 · Choose an architecture</a>
+        <a href="lab_08_exercise.html">RAG Lab 08 · Enterprise RAG capstone</a>
+      </div>
+    </details>
+  </section>
+
+  <section class="stage" id="agents" aria-labelledby="agents-title">
+    <div class="stage-heading"><span class="stage-number">4</span><div><h2 id="agents-title">Build and extend agents</h2><p class="stage-intro">Create a Foundry agent, add a custom function, connect MCP tools, and finish with Microsoft Agent Framework.</p></div></div>
+    <div class="cards">
+      <article class="card agents"><div class="num">Course 17 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-agents/Instructions/Exercises/01-build-agent-portal-and-vscode.html">Build AI agents with portal and VS Code</a></h3><p>Configure agent instructions and grounding data, then build a client app.</p></article>
+      <article class="card agents"><div class="num">Course 18 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-agents/Instructions/Exercises/02-agent-custom-tools.html">Use a custom function in an AI agent</a></h3><p>Define callable functions and process the agent's tool requests.</p></article>
+      <article class="card agents"><div class="num">Course 19 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-agents/Instructions/Exercises/03-mcp-integration.html">Extend agents with MCP tools</a></h3><p>Connect a remote MCP server and build a local server with custom tools.</p></article>
+      <article class="card agents"><div class="num">Course 20 · Microsoft-hosted</div><h3><a href="https://microsoftlearning.github.io/mslearn-ai-agents/Instructions/Exercises/07-agent-framework.html">Develop an agent with Microsoft Agent Framework</a></h3><p>Build an expense-claim agent with a custom tool through the framework SDK.</p></article>
+    </div>
+  </section>
+  <footer>Local pages and notebook are in this course folder. Microsoft-hosted exercise links open the current Microsoft Learning pages.</footer>
+</div>
+</body>
+</html>

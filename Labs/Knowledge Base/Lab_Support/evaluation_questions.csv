@@ -1,0 +1,8 @@
+question,expected_answer,expected_sources,test_type
+What password and authentication controls are required by SEC-114?,12-character password and multifactor authentication,01_IT_Security_and_Access_Standard_v2,exact_identifier
+Can a contractor download Restricted data to an unmanaged device?,No,01_IT_Security_and_Access_Standard_v2 + 02_Remote_Work_and_Data_Handling_Policy,multi_source
+How is error E-4012 resolved?,Reset Print Service and install firmware 3.2.1 or later,03_X200_Service_Manual_and_Troubleshooting,exact_code
+Why did X200 incidents fall from April to June?,Firmware 3.2.1 deployment and updated support guidance,03_X200_Service_Manual_and_Troubleshooting + 04_Q2_Operations_and_Incident_Review,multi_source
+Which service manual does the Q2 operations review cite for the incident that declined from April to June and what recovery steps does that manual prescribe?,MAN-X200; restart the printer then Reset Print Service then install firmware 3.2.1 or later and print a test page,04_Q2_Operations_and_Incident_Review + 03_X200_Service_Manual_and_Troubleshooting,multi_hop
+What should be tested after changing retrieval settings?,Rerun the fixed gold set and compare retrieval answer security latency and cost,06_RAG_Governance_Evaluation_and_Security_Guide,evaluation
+What is the customer refund period?,Insufficient evidence,None,no_answer

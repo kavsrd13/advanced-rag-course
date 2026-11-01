@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Exercise: Behind a Transformers Pipeline</title>
+  <style>
+    :root{--blue:#2563eb;--navy:#172554;--ink:#25324a;--muted:#5d6b82;--line:#d9e1ec;--soft:#f5f8fc;--tip:#ecfdf5;--warn:#fff7ed;--hf:#ffbd19}
+    *{box-sizing:border-box}body{margin:0;font:16px/1.65 "Segoe UI",Arial,sans-serif;color:var(--ink)}
+    header{background:var(--navy);color:#fff;padding:18px 24px}header div,main{max-width:1020px;margin:auto}header div{font-weight:650}
+    main{padding:44px 24px 80px}h1{font-size:2.35rem;line-height:1.15;color:#10214b;margin:0 0 12px}
+    h2{margin-top:50px;padding-bottom:8px;border-bottom:1px solid var(--line);color:#163a78}h3{margin-top:32px;color:#244a86}
+    a{color:#075fc8}.lead{font-size:1.15rem;color:var(--muted)}.meta{display:flex;gap:12px;flex-wrap:wrap;margin:22px 0 28px}
+    .pill{background:#eaf2ff;color:#164a96;border-radius:999px;padding:6px 12px;font-weight:600}
+    .box{border-left:5px solid var(--blue);background:var(--soft);padding:16px 20px;margin:22px 0}.tip{border-color:#16a36a;background:var(--tip)}.warn{border-color:#f08c2e;background:var(--warn)}.hf{border-color:var(--hf);background:#fffbea}
+    .code{position:relative;margin:18px 0 26px}.label{background:#26364d;color:#fff;padding:7px 12px;border-radius:7px 7px 0 0;font-size:.85rem}
+    pre{margin:0;background:#111827;color:#e7edf6;padding:18px;overflow:auto;border-radius:0 0 7px 7px;font:14px/1.55 Consolas,monospace}
+    code{font-family:Consolas,monospace}button{position:absolute;right:9px;top:38px;border:1px solid #7890ad;background:#fff;color:#17345f;border-radius:5px;padding:5px 9px;cursor:pointer}
+    li{margin:8px 0}table{width:100%;border-collapse:collapse;margin:20px 0}th,td{border:1px solid var(--line);padding:10px;text-align:left;vertical-align:top}th{background:#edf3fb}
+    .flow{display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin:24px 0}.flow div{background:#edf3fb;border:1px solid #bfd0e8;border-radius:7px;padding:12px 7px;text-align:center;font-weight:650}
+    .summary{background:#eaf2ff;padding:22px;border-radius:10px;margin-top:44px}
+    @media(max-width:780px){.flow{grid-template-columns:repeat(2,1fr)}}@media print{header,button{display:none}main{max-width:none;padding:0}.code{break-inside:avoid}}
+  </style>
+</head>
+<body>
+<header><div>AI Teaching Labs &nbsp; / &nbsp; Exercise 02 &nbsp; · &nbsp; <a href="index.html" style="color:#fff">Course index</a></div></header>
+<main>
+  <h1>Behind a Transformers sentiment pipeline</h1>
+  <p class="lead">Open a prepared Google Colab notebook and manually reproduce tokenization, model inference, and prediction postprocessing.</p>
+  <div class="meta"><span class="pill">Beginner-Intermediate</span><span class="pill">45-60 minutes</span><span class="pill">Google Colab + PyTorch</span></div>
+
+  <div class="box hf"><strong>Based on:</strong> Hugging Face LLM Course, <a href="https://huggingface.co/learn/llm-course/chapter2/2" target="_blank" rel="noreferrer">Behind the pipeline</a>.</div>
+
+  <h2>Learning objectives</h2>
+  <ul>
+    <li>Explain why Transformer models require numeric tensors instead of raw text.</li>
+    <li>Inspect tokens, token IDs, special tokens, padding, and attention masks.</li>
+    <li>Interpret the dimensions of a hidden-state tensor.</li>
+    <li>Distinguish a base Transformer from a task-specific model head.</li>
+    <li>Convert logits into probabilities and labels.</li>
+    <li>Verify that manual processing reproduces <code>pipeline()</code>.</li>
+  </ul>
+
+  <h2>The complete flow</h2>
+  <div class="flow"><div>Raw text</div><div>Tokens</div><div>Token IDs</div><div>Transformer</div><div>Logits</div><div>Labels</div></div>
+  <p>The high-level pipeline performs all these stages. In this exercise, you pause after each one and inspect the intermediate values.</p>
+
+  <h2>Prerequisites</h2>
+  <ul>
+    <li>A Google account and access to <a href="https://colab.research.google.com/" target="_blank" rel="noreferrer">Google Colab</a>.</li>
+    <li>The notebook file <code>behind_transformers_pipeline.ipynb</code> supplied with this exercise.</li>
+    <li>Completion of the earlier Transformer pipelines exercise is helpful but not required.</li>
+  </ul>
+
+  <h2>1. Upload the demo notebook to Colab</h2>
+  <p><a href="behind_transformers_pipeline.ipynb" download><strong>Download the prepared notebook</strong></a> if it is not already saved on your computer.</p>
+  <ol>
+    <li>Open <a href="https://colab.research.google.com/" target="_blank" rel="noreferrer">Google Colab</a>.</li>
+    <li>In the opening dialog, select the <strong>Upload</strong> tab.</li>
+    <li>Select <strong>Browse</strong> and choose <code>behind_transformers_pipeline.ipynb</code>.</li>
+    <li>After it opens, choose <strong>File &gt; Save a copy in Drive</strong> so your changes are preserved.</li>
+    <li>Choose <strong>Runtime &gt; Change runtime type</strong>. Select a <strong>T4 GPU</strong> if available, then select <strong>Save</strong>. The exercise also runs on CPU.</li>
+  </ol>
+  <div class="box tip"><strong>How to work:</strong> Read each Markdown explanation, predict what the next output will look like, and then run the code cell with <code>Shift+Enter</code>.</div>
+
+  <h2>2. Install and import the libraries</h2>
+  <p>Run the package cell. Colab already includes PyTorch, and this installs the Transformers library:</p>
+  <div class="code"><div class="label">Notebook cell - Install</div><button>Copy</button><pre><code>!pip install -q transformers</code></pre></div>
+  <p>Run the imports and define the checkpoint and two example sentences:</p>
+  <div class="code"><div class="label">Notebook cell - Setup</div><button>Copy</button><pre><code>import torch
+from transformers import (
+    AutoModel,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+    pipeline,
+)
+
+checkpoint = "distilbert/distilbert-base-uncased-finetuned-sst-2-english"
+texts = [
+    "I've been waiting for a Hugging Face course my whole life.",
+    "I dislike this lesson very much!",
+]
+
+print("PyTorch version:", torch.__version__)
+print("Number of texts:", len(texts))</code></pre></div>
+  <div class="box"><strong>Checkpoint consistency:</strong> The tokenizer and every model must use the same checkpoint because preprocessing must match the way the model was trained.</div>
+
+  <h2>3. Inspect tokens and token IDs</h2>
+  <p>Run the tokenizer inspection cell:</p>
+  <div class="code"><div class="label">Notebook cell - Tokens and IDs</div><button>Copy</button><pre><code>tokenizer = AutoTokenizer.from_pretrained(checkpoint)
+
+for text in texts:
+    tokens = tokenizer.tokenize(text)
+    token_ids = tokenizer.convert_tokens_to_ids(tokens)
+    print("TEXT:", text)
+    print("TOKENS:", tokens)
+    print("TOKEN IDS:", token_ids)
+    print()</code></pre></div>
+  <ol>
+    <li>Find words that were divided into subword tokens. DistilBERT marks continuation pieces with <code>##</code>.</li>
+    <li>Notice that punctuation can be its own token.</li>
+    <li>Confirm that every token maps to an integer in the tokenizer vocabulary.</li>
+  </ol>
+  <div class="box tip"><strong>Discussion:</strong> Tokenization is not simply splitting on spaces. Subwords let a fixed vocabulary represent unfamiliar or uncommon words.</div>
+
+  <h2>4. Create model-ready tensors</h2>
+  <div class="code"><div class="label">Notebook cell - Batch encoding</div><button>Copy</button><pre><code>inputs = tokenizer(
+    texts,
+    padding=True,
+    truncation=True,
+    return_tensors="pt",
+)
+
+print(inputs)
+print("input_ids shape:", inputs["input_ids"].shape)
+print("attention_mask shape:", inputs["attention_mask"].shape)</code></pre></div>
+  <p>The tokenizer now performs several extra operations:</p>
+  <ul>
+    <li>Adds special tokens needed by the model.</li>
+    <li>Pads the shorter sentence so both rows have the same length.</li>
+    <li>Creates PyTorch tensors because <code>return_tensors="pt"</code>.</li>
+    <li>Creates an attention mask to distinguish real tokens from padding.</li>
+  </ul>
+
+  <h3>Inspect the batch token by token</h3>
+  <div class="code"><div class="label">Notebook cell - Token table</div><button>Copy</button><pre><code>for row in range(len(texts)):
+    ids = inputs["input_ids"][row]
+    mask = inputs["attention_mask"][row]
+    tokens = tokenizer.convert_ids_to_tokens(ids)
+
+    print(f"SEQUENCE {row + 1}")
+    for token, token_id, attention in zip(tokens, ids.tolist(), mask.tolist()):
+        print(f"{token:15} id={token_id:5} attention={attention}")
+    print()</code></pre></div>
+  <p>Find the <code>[CLS]</code>, <code>[SEP]</code>, and <code>[PAD]</code> tokens. Padding positions should have attention value <code>0</code>; real and special tokens should have value <code>1</code>.</p>
+
+  <h2>5. Run only the base Transformer</h2>
+  <div class="code"><div class="label">Notebook cell - Hidden states</div><button>Copy</button><pre><code>base_model = AutoModel.from_pretrained(checkpoint)
+base_model.eval()
+
+with torch.no_grad():
+    base_outputs = base_model(**inputs)
+
+hidden_states = base_outputs.last_hidden_state
+print("Hidden-state shape:", hidden_states.shape)
+print("Batch size:", hidden_states.shape[0])
+print("Sequence length:", hidden_states.shape[1])
+print("Hidden size:", hidden_states.shape[2])
+print("First token, first 10 values:", hidden_states[0, 0, :10])</code></pre></div>
+  <p>Interpret the three dimensions:</p>
+  <table><thead><tr><th>Dimension</th><th>Meaning</th></tr></thead><tbody>
+    <tr><td>Batch size</td><td>The number of input sequences processed together.</td></tr>
+    <tr><td>Sequence length</td><td>The padded number of tokens in each sequence.</td></tr>
+    <tr><td>Hidden size</td><td>The contextual vector size produced for each token, 768 for this model.</td></tr>
+  </tbody></table>
+  <div class="box"><strong>Important:</strong> Hidden states are learned numeric features. They are not yet positive or negative probabilities.</div>
+
+  <h2>6. Add the sentiment classification head</h2>
+  <div class="code"><div class="label">Notebook cell - Logits</div><button>Copy</button><pre><code>classifier_model = AutoModelForSequenceClassification.from_pretrained(checkpoint)
+classifier_model.eval()
+
+with torch.no_grad():
+    outputs = classifier_model(**inputs)
+
+logits = outputs.logits
+print("Logits:")
+print(logits)
+print("Logits shape:", logits.shape)
+print("Label mapping:", classifier_model.config.id2label)</code></pre></div>
+  <p>The output shape is <code>[2, 2]</code>: two input sentences and two possible labels. The task head projects the Transformer representation down to two raw scores.</p>
+  <div class="box warn"><strong>Do not interpret logits as probabilities:</strong> logits may be negative and do not need to sum to 1.</div>
+
+  <h2>7. Convert logits to predictions</h2>
+  <div class="code"><div class="label">Notebook cell - Softmax and labels</div><button>Copy</button><pre><code>probabilities = torch.nn.functional.softmax(logits, dim=-1)
+predicted_class_ids = probabilities.argmax(dim=-1)
+
+manual_results = []
+for text, class_id, scores in zip(texts, predicted_class_ids, probabilities):
+    class_id = class_id.item()
+    result = {
+        "text": text,
+        "label": classifier_model.config.id2label[class_id],
+        "score": scores[class_id].item(),
+    }
+    manual_results.append(result)
+
+print("Probabilities:")
+print(probabilities)
+print("Row sums:", probabilities.sum(dim=-1))
+print("Manual results:")
+for result in manual_results:
+    print(result)</code></pre></div>
+  <ol>
+    <li>Confirm that every probability is between 0 and 1.</li>
+    <li>Confirm that each row sum is approximately 1.</li>
+    <li>Observe how <code>argmax</code> selects the largest class probability.</li>
+    <li>Observe how <code>id2label</code> maps class 0 or 1 to <code>NEGATIVE</code> or <code>POSITIVE</code>.</li>
+  </ol>
+
+  <h2>8. Compare the manual process with pipeline()</h2>
+  <div class="code"><div class="label">Notebook cell - Pipeline comparison</div><button>Copy</button><pre><code>sentiment_pipeline = pipeline(
+    "sentiment-analysis",
+    model=checkpoint,
+    tokenizer=checkpoint,
+)
+
+pipeline_results = sentiment_pipeline(texts)
+
+for manual, automatic in zip(manual_results, pipeline_results):
+    print("Manual:  ", manual["label"], round(manual["score"], 6))
+    print("Pipeline:", automatic["label"], round(automatic["score"], 6))
+    print()
+
+assert [item["label"] for item in manual_results] == [
+    item["label"] for item in pipeline_results
+]
+print("The manual and pipeline labels match.")</code></pre></div>
+  <div class="box tip"><strong>Expected result:</strong> The labels and scores should match, apart from tiny floating-point rounding differences. You have reproduced the pipeline's major stages.</div>
+
+  <h2>9. Complete the student challenge</h2>
+  <ol>
+    <li>Replace <code>my_texts</code> with at least two original examples.</li>
+    <li>Predict the likely sentiment before running the cell.</li>
+    <li>Inspect the manually computed label and score.</li>
+    <li>Compare the results with the pipeline output.</li>
+    <li>Write a Markdown note explaining any surprising prediction.</li>
+  </ol>
+  <div class="box warn"><strong>Model limitation:</strong> This checkpoint was trained for English binary sentiment. It is not a general emotion, sarcasm, truth, or safety detector.</div>
+
+  <h2>10. Save and submit</h2>
+  <ol>
+    <li>Choose <strong>Runtime &gt; Run all</strong> to verify that every cell succeeds in order.</li>
+    <li>Save the notebook in Drive.</li>
+    <li>Choose <strong>File &gt; Download &gt; Download .ipynb</strong> when a notebook file is required for submission.</li>
+    <li>Choose <strong>Runtime &gt; Disconnect and delete runtime</strong> when finished.</li>
+  </ol>
+
+  <h2>Troubleshooting</h2>
+  <table><thead><tr><th>Problem</th><th>Suggested action</th></tr></thead><tbody>
+    <tr><td>Variables are undefined</td><td>Run the notebook from the top. Later cells depend on earlier tokenizer and model variables.</td></tr>
+    <tr><td>Download takes a long time</td><td>Wait for the first model download to complete. The checkpoint is cached for the current runtime.</td></tr>
+    <tr><td>Tensor shape differs</td><td>Sequence length changes when you edit the text because padding uses the longest sequence in the batch.</td></tr>
+    <tr><td>Manual and pipeline scores differ</td><td>Use the same checkpoint and tokenizer, call <code>eval()</code>, and keep <code>torch.no_grad()</code> around inference.</td></tr>
+    <tr><td>GPU memory error</td><td>Restart the runtime or use CPU. This small notebook does not require a GPU.</td></tr>
+  </tbody></table>
+
+  <div class="summary"><strong>Summary</strong><br>A sentiment pipeline is a convenient wrapper around preprocessing, Transformer inference, a classification head, and postprocessing: <code>text -> tokens -> IDs and masks -> hidden states -> logits -> softmax -> labels</code>.</div>
+</main>
+<script>
+async function copyText(text){if(navigator.clipboard){try{await navigator.clipboard.writeText(text);return}catch{}}const area=document.createElement("textarea");area.value=text;document.body.append(area);area.select();document.execCommand("copy");area.remove()}
+document.querySelectorAll("button").forEach(button=>button.addEventListener("click",async()=>{await copyText(button.nextElementSibling.innerText);button.textContent="Copied";setTimeout(()=>button.textContent="Copy",1200)}));
+</script>
+</body>
+</html>

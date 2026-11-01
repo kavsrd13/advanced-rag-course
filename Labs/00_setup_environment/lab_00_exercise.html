@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lab 00 · Create the Azure environment</title><style>
+    :root { color-scheme: light; --ink:#16304a; --muted:#52677a; --line:#d9e3eb; --blue:#075aa5; --pale:#edf5fc; --gold:#fff2d8; --green:#e8f5ef; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; background:#f7fafc; color:var(--ink); font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    a { color:var(--blue); }
+    a:focus-visible, button:focus-visible { outline:3px solid #ffab36; outline-offset:3px; }
+    header { background:linear-gradient(125deg,#102a43,#075aa5); color:#fff; padding:3.4rem max(1.25rem,calc((100% - 1100px)/2)); }
+    header .eyebrow { text-transform:uppercase; letter-spacing:.16em; font-weight:700; color:#a9d6ff; font-size:.8rem; }
+    h1 { font-size:clamp(2rem,5vw,3.4rem); line-height:1.12; margin:.55rem 0 1rem; }
+    h2 { margin:0 0 .8rem; font-size:1.65rem; }
+    h3 { margin:1.5rem 0 .4rem; font-size:1.13rem; }
+    p { margin:.45rem 0 1rem; }
+    .lead { max-width:770px; font-size:1.14rem; color:#e5f3ff; }
+    .badges { display:flex; flex-wrap:wrap; gap:.55rem; margin-top:1.5rem; }
+    .badge { border:1px solid #86b9e4; border-radius:99px; padding:.25rem .8rem; font-size:.88rem; }
+    .layout { max-width:1100px; margin:auto; padding:1.5rem; display:grid; grid-template-columns:220px minmax(0,1fr); gap:2rem; }
+    nav { position:sticky; top:1rem; align-self:start; background:#fff; border:1px solid var(--line); border-radius:14px; padding:1rem; }
+    nav strong { display:block; margin-bottom:.5rem; }
+    nav a { display:block; padding:.36rem .1rem; text-decoration:none; font-size:.92rem; }
+    nav a:hover { text-decoration:underline; }
+    main { min-width:0; }
+    section { background:#fff; border:1px solid var(--line); border-radius:16px; padding:1.5rem; margin-bottom:1.2rem; box-shadow:0 3px 15px #183b5809; }
+    .step { display:inline-flex; align-items:center; justify-content:center; width:2rem; height:2rem; border-radius:50%; background:#075aa5; color:#fff; font-weight:700; margin-right:.5rem; }
+    .callout { border-left:4px solid var(--blue); background:var(--pale); padding:.9rem 1rem; border-radius:0 8px 8px 0; margin:1rem 0; }
+    .callout.warn { border-color:#ba7900; background:var(--gold); }
+    .callout.good { border-color:#278058; background:var(--green); }
+    pre { overflow:auto; background:#102a43; color:#e8f4ff; border-radius:10px; padding:1rem; line-height:1.48; font-size:.9rem; }
+    code { font-family:ui-monospace,SFMono-Regular,Consolas,monospace; }
+    :not(pre)>code { background:#edf3f8; border-radius:4px; padding:.1rem .28rem; color:#173b61; }
+    table { border-collapse:collapse; width:100%; font-size:.94rem; }
+    th,td { border-bottom:1px solid var(--line); padding:.65rem; text-align:left; vertical-align:top; }
+    th { background:#f0f6fb; }
+    .scroll { overflow-x:auto; }
+    details { border:1px solid var(--line); border-radius:10px; padding:.7rem 1rem; margin:.7rem 0; }
+    summary { cursor:pointer; font-weight:700; }
+    details pre { max-height:440px; }
+    ol li, ul li { margin:.35rem 0; }
+    .filelinks { display:flex; flex-wrap:wrap; gap:.6rem; }
+    .filelinks a { display:inline-block; background:#e6f1fa; padding:.4rem .7rem; border-radius:7px; font-weight:600; }
+    footer { max-width:1100px; margin:0 auto 2rem; padding:0 1.5rem; color:var(--muted); font-size:.88rem; }
+    @media (max-width:780px) { .layout { display:block; padding:1rem; } nav { position:static; margin-bottom:1rem; } nav a { display:inline-block; margin-right:.8rem; } section { padding:1.1rem; } }
+  </style></head><body>
+<header><div class="eyebrow">Advanced RAG course · Hands-on exercise 00</div><h1>Create the Azure environment</h1>
+<p class="lead">Provision separate student resources, inspect the Search and Foundry setup, then prepare the Python environment for the RAG labs.</p>
+<div class="badges"><span class="badge">PowerShell on Windows</span><span class="badge">Azure CLI</span><span class="badge">Python 3.11</span></div></header>
+<div class="layout"><nav aria-label="Exercise steps"><strong>Follow in order</strong><a href="#goal">Goal</a><a href="#prereq">1. Prerequisites</a><a href="#python">2. Python environment</a><a href="#azure">3. Create resources</a><a href="#scripts">4. Understand setup</a><a href="#run">5. Run and inspect</a><a href="#test">6. Test prompt</a><a href="#cleanup">7. Clean up</a></nav><main><section id="goal"><h2>What this setup creates</h2><p><strong>Student resource group → Storage + Azure AI Search + Foundry project → two model deployments → generated connection file.</strong> Run this once for your dedicated student resources. Later labs reuse them and create their own indexes.</p></section><section id="prereq"><h2><span class="step">1</span>Check prerequisites</h2><p>Use PowerShell, Python 3.11, Azure CLI 2.80 or later, a subscription with resource creation and model deployment rights, and quota in <code>eastus</code>. Each student needs a unique lowercase tag of 3–8 letters or digits, such as <code>s01</code>. These resources can incur charges.</p><pre><code>python --version
+az version
+Test-Path &quot;.\Knowledge Base\PDF_Files&quot;
+Test-Path .\00_setup_environment\setup.ps1</code></pre></section><section id="python"><h2><span class="step">2</span>Prepare Python for later labs</h2><p>Provisioning uses Azure CLI and PowerShell. Create the classic course environment so Lab 01 and later classic RAG apps can run after setup:</p><pre><code>python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r .\requirements.txt
+.\.venv\Scripts\python.exe -m pip check</code></pre><p>Lab 05 uses its separate <code>.venv-foundry</code> because its SDK has different dependency versions.</p></section><section id="azure"><h2><span class="step">3</span>Select a subscription and create resources</h2><p>Use your assigned subscription. For a shared class subscription, the unique tag prevents resource-name collisions. Replace <code>s01</code> with your assigned tag.</p><pre><code>az login
+az account set --subscription &quot;&lt;subscription-id&gt;&quot;
+az account show --query &quot;{subscription:id,name:name}&quot; --output table
+.\00_setup_environment\setup.ps1 -StudentTag s01</code></pre><p>The script requests capacity 10 for each deployment. If a model version, SKU, region, or quota is unavailable, use an instructor-provided deployment and configure each lesson’s <code>.env</code> with its actual names. If you already have assigned resources, skip provisioning and use the existing-resource route in that lesson’s HTML.</p></section><section id="scripts"><h2><span class="step">4</span>Understand the setup files</h2><h3><a href="./setup.ps1">setup.ps1</a></h3><ol><li><strong>Subscription and names:</strong> read the selected subscription and combine its prefix with a student tag so classmates get separate resources.</li><li><strong>Resource group and Storage:</strong> create a dedicated group, private Blob container, and upload the original course documents. Blob upload does not create Search chunks.</li><li><strong>Search:</strong> create a Basic service and an empty <code>rag-basic</code> index. Lab 01’s builder later adds its access fields and documents.</li><li><strong>Foundry:</strong> create a resource/project, deploy <code>gpt-5-mini</code> and <code>text-embedding-3-large</code>, then save endpoints and keys to <code>.env.generated</code>.</li></ol><details><summary>Read the complete embedded PowerShell setup script</summary><pre><code>param(
+    [ValidatePattern(&#x27;^[a-z0-9]{3,8}$&#x27;)]
+    [string]$StudentTag = &#x27;&#x27;
+)
+
+# Stop if an Azure CLI command fails instead of continuing with half-created resources.
+function Invoke-Az {
+    &amp; az @args
+    if ($LASTEXITCODE -ne 0) { throw &quot;Azure CLI command failed.&quot; }
+}
+
+# Use the subscription already selected by az login.
+$SubscriptionId = (Invoke-Az account show --query id --output tsv).Trim()
+$Suffix = $SubscriptionId.Split(&#x27;-&#x27;)[0]
+$NameSuffix = if ($StudentTag) { &quot;$StudentTag$Suffix&quot; } else { $Suffix }
+$Location = &quot;eastus&quot;
+$ChatCapacity = 10
+$EmbeddingCapacity = 10
+
+$CourseDir = Split-Path -Parent $PSScriptRoot
+$ResourceGroup = &quot;rg-rag-$NameSuffix&quot;
+$StorageAccount = &quot;ragstore$NameSuffix&quot;
+$Container = &quot;knowledge-base&quot;
+$SearchService = &quot;rag-search-$NameSuffix&quot;
+$IndexName = &quot;rag-basic&quot;
+$FoundryAccount = &quot;rag-foundry-$NameSuffix&quot;
+$FoundryProject = &quot;rag-course&quot;
+$ChatDeployment = &quot;gpt-5-mini&quot;
+$EmbeddingDeployment = &quot;text-embedding-3-large&quot;
+
+Write-Host &quot;Subscription: $SubscriptionId&quot;
+Write-Host &quot;Region: $Location | Resource group: $ResourceGroup&quot;
+Write-Host &quot;Storage: $StorageAccount | Search: $SearchService | Foundry: $FoundryAccount&quot;
+
+# 1. Create a resource group in the selected subscription.
+Invoke-Az group create --name $ResourceGroup --location $Location --output none
+
+# 2. Create private Blob Storage and upload the course knowledge base.
+Invoke-Az storage account create `
+    --name $StorageAccount --resource-group $ResourceGroup `
+    --location $Location --kind StorageV2 --sku Standard_LRS `
+    --allow-blob-public-access false --output none
+$env:AZURE_STORAGE_KEY = Invoke-Az storage account keys list `
+    --account-name $StorageAccount --resource-group $ResourceGroup `
+    --query &#x27;[0].value&#x27; --output tsv
+Invoke-Az storage container create `
+    --name $Container --account-name $StorageAccount --auth-mode key --output none
+Invoke-Az storage blob upload-batch `
+    --source (Join-Path $CourseDir &#x27;Knowledge Base&#x27;) --destination $Container `
+    --account-name $StorageAccount --auth-mode key --overwrite true --output none
+Remove-Item Env:AZURE_STORAGE_KEY
+
+# 3. Create Azure AI Search and the empty vector index used by Lab 01.
+Invoke-Az search service create `
+    --name $SearchService --resource-group $ResourceGroup `
+    --location $Location --sku basic --semantic-search free --output none
+$SearchKey = Invoke-Az search admin-key show `
+    --service-name $SearchService --resource-group $ResourceGroup `
+    --query primaryKey --output tsv
+$IndexFile = Join-Path $PSScriptRoot &#x27;search_index.json&#x27;
+$SearchUri = &quot;https://${SearchService}.search.windows.net/indexes/${IndexName}?api-version=2024-07-01&quot;
+Invoke-Az rest --method put --skip-authorization-header `
+    --uri $SearchUri --headers &quot;api-key=$SearchKey&quot; &#x27;Content-Type=application/json&#x27; `
+    --body &quot;@$IndexFile&quot; --output none
+
+# 4. Create a Microsoft Foundry resource and project.
+Invoke-Az cognitiveservices account create `
+    --name $FoundryAccount --resource-group $ResourceGroup `
+    --kind AIServices --sku S0 --location $Location `
+    --custom-domain $FoundryAccount --assign-identity `
+    --allow-project-management true --yes --output none
+Invoke-Az cognitiveservices account project create `
+    --name $FoundryAccount --resource-group $ResourceGroup `
+    --project-name $FoundryProject --location $Location --output none
+
+# 5. Deploy a chat model and the embedding model used by the labs.
+Invoke-Az cognitiveservices account deployment create `
+    --name $FoundryAccount --resource-group $ResourceGroup `
+    --deployment-name $ChatDeployment --model-name gpt-5-mini `
+    --model-version 2025-08-07 --model-format OpenAI `
+    --sku-name GlobalStandard --sku-capacity $ChatCapacity --output none
+Invoke-Az cognitiveservices account deployment create `
+    --name $FoundryAccount --resource-group $ResourceGroup `
+    --deployment-name $EmbeddingDeployment --model-name text-embedding-3-large `
+    --model-version 1 --model-format OpenAI `
+    --sku-name Standard --sku-capacity $EmbeddingCapacity --output none
+
+# Save the new connection values without showing keys on screen.
+$FoundryKey = Invoke-Az cognitiveservices account keys list `
+    --name $FoundryAccount --resource-group $ResourceGroup `
+    --query key1 --output tsv
+$OutputFile = Join-Path $PSScriptRoot &#x27;.env.generated&#x27;
+$Lines = @(
+    &quot;AZURE_SUBSCRIPTION_ID=$SubscriptionId&quot;
+    &quot;AZURE_RESOURCE_GROUP=$ResourceGroup&quot;
+    &quot;AZURE_STORAGE_ACCOUNT=$StorageAccount&quot;
+    &quot;AZURE_STORAGE_CONTAINER=$Container&quot;
+    &quot;AZURE_FOUNDRY_ACCOUNT=$FoundryAccount&quot;
+    &quot;AZURE_SEARCH_SERVICE=$SearchService&quot;
+    &quot;AZURE_SEARCH_ENDPOINT=https://${SearchService}.search.windows.net&quot;
+    &quot;AZURE_SEARCH_API_KEY=$SearchKey&quot;
+    &quot;AZURE_OPENAI_ENDPOINT=https://${FoundryAccount}.openai.azure.com&quot;
+    &quot;AZURE_OPENAI_API_KEY=$FoundryKey&quot;
+    &quot;AZURE_OPENAI_DEPLOYMENT=$ChatDeployment&quot;
+    &quot;AZURE_OPENAI_EMBEDDING_DEPLOYMENT=$EmbeddingDeployment&quot;
+    &quot;AIPROJECT_ENDPOINT=https://${FoundryAccount}.services.ai.azure.com/api/projects/$FoundryProject&quot;
+    &quot;FOUNDRY_PROJECT_RESOURCE_ID=/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.CognitiveServices/accounts/$FoundryAccount/projects/$FoundryProject&quot;
+    &quot;AZURE_OPENAI_API_VERSION=2025-04-01-preview&quot;
+)
+[System.IO.File]::WriteAllText(
+    $OutputFile,
+    ($Lines -join [Environment]::NewLine) + [Environment]::NewLine,
+    [System.Text.UTF8Encoding]::new($false)
+)
+
+Write-Host &quot;Setup complete. Lab 01 index: $IndexName (empty until build_index.py runs).&quot;
+Write-Host &quot;Connection values were saved in $OutputFile.&quot;
+</code></pre></details><h3><a href="./search_index.json">search_index.json</a></h3><p>This initial schema has a key, text fields, and a 3,072-dimension vector field. The Lab 01 builder updates the schema with access metadata before upload.</p><details><summary>Read the complete embedded initial index JSON</summary><pre><code>{
+  &quot;name&quot;: &quot;rag-basic&quot;,
+  &quot;fields&quot;: [
+    {&quot;name&quot;: &quot;id&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;key&quot;: true, &quot;retrievable&quot;: true, &quot;searchable&quot;: false, &quot;filterable&quot;: false, &quot;sortable&quot;: false, &quot;facetable&quot;: false},
+    {&quot;name&quot;: &quot;title&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;retrievable&quot;: true, &quot;searchable&quot;: true, &quot;filterable&quot;: false, &quot;sortable&quot;: false, &quot;facetable&quot;: false},
+    {&quot;name&quot;: &quot;content&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;retrievable&quot;: true, &quot;searchable&quot;: true, &quot;filterable&quot;: false, &quot;sortable&quot;: false, &quot;facetable&quot;: false},
+    {&quot;name&quot;: &quot;contentVector&quot;, &quot;type&quot;: &quot;Collection(Edm.Single)&quot;, &quot;searchable&quot;: true, &quot;dimensions&quot;: 3072, &quot;vectorSearchProfile&quot;: &quot;rag-vector-profile&quot;},
+    {&quot;name&quot;: &quot;source&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;retrievable&quot;: true, &quot;searchable&quot;: false, &quot;filterable&quot;: true, &quot;sortable&quot;: false, &quot;facetable&quot;: false},
+    {&quot;name&quot;: &quot;documentId&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;retrievable&quot;: true, &quot;searchable&quot;: false, &quot;filterable&quot;: true, &quot;sortable&quot;: false, &quot;facetable&quot;: false},
+    {&quot;name&quot;: &quot;policyId&quot;, &quot;type&quot;: &quot;Edm.String&quot;, &quot;retrievable&quot;: true, &quot;searchable&quot;: false, &quot;filterable&quot;: true, &quot;sortable&quot;: false, &quot;facetable&quot;: false}
+  ],
+  &quot;vectorSearch&quot;: {
+    &quot;algorithms&quot;: [{&quot;name&quot;: &quot;rag-hnsw&quot;, &quot;kind&quot;: &quot;hnsw&quot;}],
+    &quot;profiles&quot;: [{&quot;name&quot;: &quot;rag-vector-profile&quot;, &quot;algorithm&quot;: &quot;rag-hnsw&quot;}]
+  }
+}
+</code></pre></details></section><section id="run"><h2><span class="step">5</span>Inspect the result</h2><p>Expect <code>Setup complete</code> and <code>00_setup_environment/.env.generated</code>. Check resource names without printing keys:</p><pre><code>$subscriptionPrefix = (az account show --query id --output tsv).Split(&#x27;-&#x27;)[0]
+$labGroup = &quot;rg-rag-s01$subscriptionPrefix&quot;
+az resource list --resource-group $labGroup --query &quot;[].{name:name,type:type}&quot; --output table
+Test-Path .\00_setup_environment\.env.generated</code></pre><p>Do not post <code>.env.generated</code>; it contains admin and model keys. Copy its values into each lab’s <code>.env</code> as that lab instructs. The original Blob files are not yet searchable; run the lesson builder next.</p></section><section id="test"><h2><span class="step">6</span>Run a first question</h2><p>Continue to <a href="../01_basic_rag_diagnose/lab_01_exercise.html">Lab 01</a>. After its builder uploads chunks, ask: <strong>What does SEC-114 require for laptops?</strong> Expect an answer citing <code>SEC-114</code>. A successful setup alone does not answer this question because the Search index starts empty.</p></section><section id="cleanup"><h2><span class="step">7</span>Delete your student resources</h2><p>After every course lab is finished, check the selected subscription and delete only the resource group made with your tag:</p><pre><code>az account set --subscription &quot;&lt;subscription-id&gt;&quot;
+az group list --query &quot;[?starts_with(name, &#x27;rg-rag-&#x27;)].name&quot; --output table
+az group delete --name &quot;&lt;your-exact-student-resource-group&gt;&quot; --yes</code></pre><div class="callout warn">Deleting a resource group deletes its Search, Foundry, Storage, indexes, models, and data. Keep instructor-owned shared resources.</div></section><section id="references"><h2>Reference documentation</h2><ul><li><a href="https://learn.microsoft.com/en-us/azure/search/search-manage-azure-cli">Azure AI Search CLI</a></li><li><a href="https://learn.microsoft.com/en-us/azure/foundry/tutorials/quickstart-create-foundry-resources">Foundry resources and deployments</a></li><li><a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/delete-resource-group">Delete a resource group</a></li></ul></section></main></div>
+<footer>Lab 00 · Run commands from the course Labs folder. <a href="../README.md">Course index</a></footer></body></html>

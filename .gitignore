@@ -1,0 +1,14 @@
+**/.env
+**/.env.*
+!**/.env.example
+**/.venv/
+**/.venv-*/
+**/__pycache__/
+**/*.pyc
+**/graph_db/
+**/local_vector_index.json
+Labs/Workshop_Admin/private/
+Labs/Workshop_Admin/provision_students.ps1
+Labs/Research.pdf
+Labs/Prompt for RAG Course Deck 1.docx
+Presentations.zip

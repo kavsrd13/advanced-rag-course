@@ -1,0 +1,174 @@
+LAB 03B - HIERARCHICAL RAG TEST PROMPTS AND SEARCH QUERIES
+
+Azure AI Search service: use AZURE_SEARCH_ENDPOINT from this lab's .env
+Index: use AZURE_SEARCH_HIERARCHY_INDEX from this lab's .env
+
+Use the prompts with rag_app.py. Use the JSON requests in Azure Portal:
+Search service -> Search management -> Indexes -> your hierarchy index
+-> Search explorer -> JSON view.
+
+
+============================================================
+SAMPLE RAG PROMPTS
+============================================================
+
+1. Recommended multi-document question
+
+Why did X200 E-4012 incidents fall from April to June, and what should
+support do if E-4012 occurs again?
+
+Expected routing:
+- OPS-Q2-2026 for the incident trend and root cause.
+- MAN-X200 for the recovery procedure.
+
+Run:
+.\.venv\Scripts\python .\03b_hierarchical_rag\rag_app.py
+
+
+2. Operations-only question
+
+What is the trend in X200 incidents across Q2?
+
+Run:
+.\.venv\Scripts\python .\03b_hierarchical_rag\rag_app.py "What is the trend in X200 incidents across Q2?"
+
+Expected main parent: OPS-Q2-2026
+
+
+3. Service-manual question
+
+How should a technician resolve X200 error E-4012?
+
+Run:
+.\.venv\Scripts\python .\03b_hierarchical_rag\rag_app.py "How should a technician resolve X200 error E-4012?"
+
+Expected main parent: MAN-X200
+
+
+4. Governance question
+
+What evaluation and security controls are required for a RAG system?
+
+Run:
+.\.venv\Scripts\python .\03b_hierarchical_rag\rag_app.py "What evaluation and security controls are required for a RAG system?"
+
+Expected main parent: AI-GOV-310
+
+
+============================================================
+AZURE SEARCH EXPLORER JSON QUERIES
+============================================================
+
+QUERY 1 - SHOW ALL PARENT SUMMARIES
+
+Expected count: 6
+
+{
+  "search": "*",
+  "filter": "level eq 'summary'",
+  "select": "id,policyId,documentId,title,level,content",
+  "count": true,
+  "top": 50
+}
+
+
+QUERY 2 - SHOW ALL LEAF CHUNKS
+
+Expected count: 19
+
+{
+  "search": "*",
+  "filter": "level eq 'leaf'",
+  "select": "id,policyId,documentId,title,level,chunkOrder,content",
+  "count": true,
+  "top": 50
+}
+
+
+QUERY 3 - SHOW THE MAN-X200 PARENT AND ALL ITS CHILDREN
+
+The summary and leaf chunks share the same documentId.
+
+{
+  "search": "*",
+  "filter": "documentId eq '03_X200_Service_Manual_and_Troubleshooting'",
+  "select": "id,policyId,documentId,title,level,chunkOrder,content",
+  "count": true,
+  "top": 50
+}
+
+
+QUERY 4 - SEARCH ONLY PARENT SUMMARIES
+
+This demonstrates the first hierarchical routing stage. Search Explorer
+performs text plus semantic ranking here. The Python application also adds
+a vector query for a hybrid search.
+
+{
+  "search": "Why did X200 E-4012 incidents fall and how is the error resolved?",
+  "filter": "level eq 'summary'",
+  "queryType": "semantic",
+  "semanticConfiguration": "rag-semantic-config",
+  "select": "id,policyId,documentId,level,content",
+  "top": 3
+}
+
+
+QUERY 5 - SEARCH LEAF CHUNKS INSIDE OPS-Q2-2026
+
+This demonstrates the second hierarchical retrieval stage after the parent
+document has been selected.
+
+{
+  "search": "Why did X200 incidents fall from April to June?",
+  "filter": "documentId eq '04_Q2_Operations_and_Incident_Review' and level eq 'leaf'",
+  "queryType": "semantic",
+  "semanticConfiguration": "rag-semantic-config",
+  "select": "id,policyId,documentId,level,chunkOrder,content",
+  "top": 3
+}
+
+
+QUERY 6 - SEARCH LEAF CHUNKS INSIDE MAN-X200
+
+{
+  "search": "What should support do when E-4012 occurs?",
+  "filter": "documentId eq '03_X200_Service_Manual_and_Troubleshooting' and level eq 'leaf'",
+  "queryType": "semantic",
+  "semanticConfiguration": "rag-semantic-config",
+  "select": "id,policyId,documentId,level,chunkOrder,content",
+  "top": 3
+}
+
+
+QUERY 7 - SHOW ONE SPECIFIC SUMMARY RECORD
+
+{
+  "search": "*",
+  "filter": "id eq '03_X200_Service_Manual_and_Troubleshooting-summary'",
+  "select": "id,policyId,documentId,title,level,content",
+  "top": 1
+}
+
+
+QUERY 8 - SHOW ONE SPECIFIC LEAF RECORD
+
+{
+  "search": "*",
+  "filter": "id eq '03_X200_Service_Manual_and_Troubleshooting-leaf-0'",
+  "select": "id,policyId,documentId,title,level,chunkOrder,content",
+  "top": 1
+}
+
+
+============================================================
+WHAT TO CHECK
+============================================================
+
+1. Summary records have level = summary and IDs ending in -summary.
+2. Detail records have level = leaf and IDs containing -leaf-<number>.
+3. A summary and all its leaf chunks share the same documentId.
+4. Summary content is model-generated routing text.
+5. Leaf content is original evidence extracted from the PDF.
+6. The application searches summaries first and leaf chunks second.
+7. Only leaf chunks are placed in the final answer prompt.
