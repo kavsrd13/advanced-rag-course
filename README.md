@@ -1,6 +1,6 @@
 # Advanced RAG Course
 
-Start with the [ordered exercise index](exercise%20instruction/index.html). It guides students from Hugging Face through Microsoft Foundry, RAG patterns, and agents.
+Open the [student exercise site](https://kavsrd13.github.io/advanced-rag-course/) or browse the [index source](exercise%20instruction/index.html). It guides students from Hugging Face through Microsoft Foundry, RAG patterns, and agents.
 
 ## Folders
 
