@@ -163,7 +163,7 @@ def cleanup(lab):
         '<p>Wait until you have finished every lab that uses it. Confirm the selected subscription and your '
         'exact group name, then delete that group. This removes its Search, Foundry, Storage, models, indexes, and data.</p>'
         + code('az account set --subscription "<subscription-id>"\n'
-               'az group list --query "[?starts_with(name, \'rg-rag-\')].name" --output table\n'
+               'az group list --query "[].name" --output table\n'
                'az group delete --name "<your-exact-student-resource-group>" --yes')
         + '<div class="callout warn">Delete only the group created with your student tag. Group deletion is irreversible.</div>'
         '<h3>If you reused assigned resources</h3>'
@@ -222,7 +222,7 @@ MODEL_ENV = [
     "AZURE_OPENAI_ENDPOINT=https://<foundry-resource>.openai.azure.com",
     "AZURE_OPENAI_API_KEY=<foundry-key>",
     "AZURE_OPENAI_API_VERSION=2025-04-01-preview",
-    "AZURE_OPENAI_DEPLOYMENT=gpt-5-mini",
+    "AZURE_OPENAI_DEPLOYMENT=gpt-4.1",
     "AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-large",
 ]
 SEARCH_ENV = [
@@ -484,13 +484,13 @@ LABS = [
         "lead": "Create two knowledge sources, guide Foundry IQ’s query planning, connect its MCP tool to a Foundry agent, and inspect the actual retrieval trace.",
         "badge": "Foundry IQ preview + MCP tool",
         "concept": '<p>Scenario: a support analyst asks why X200 E-4012 incidents fell and which firmware fixes the problem. The operations report supplies cause and trend; the manual supplies recovery. The knowledge base’s <code>retrievalInstructions</code> guide which source to query. The agent’s instructions require a <code>knowledge_base_retrieve</code> tool call before answering. These are two distinct instruction layers.</p><div class="callout warn">This lab uses the <code>2026-08-01-preview</code> Foundry IQ Search API. It demonstrates agentic retrieval and citations, not user-specific document authorization.</div>',
-        "prerequisites": '<p>Have Python 3.11, Azure CLI, both source PDFs, a Basic-or-higher Search service, a Foundry project with <code>gpt-5-mini</code>, and role-assignment permission for the project and Search identities. Use a dedicated project and Search service for this lab’s fixed names. See the <a href="./README.md">Lab 05 notes</a>.</p>',
+        "prerequisites": '<p>Have Python 3.11, Azure CLI, both source PDFs, a Basic-or-higher Search service, a Foundry project with <code>gpt-4.1</code>, and role-assignment permission for the project and Search identities. Use a dedicated project and Search service for this lab’s fixed names. See the <a href="./README.md">Lab 05 notes</a>.</p>',
         "requirements": "foundry", "resource": "foundry",
         "env_template": SEARCH_ENV + [
             "AIPROJECT_ENDPOINT=https://<foundry-resource>.services.ai.azure.com/api/projects/rag-course",
             "FOUNDRY_PROJECT_RESOURCE_ID=/subscriptions/<subscription-id>/resourceGroups/<resource-group>/providers/Microsoft.CognitiveServices/accounts/<foundry-resource>/projects/rag-course",
             "AZURE_OPENAI_ENDPOINT=https://<foundry-resource>.openai.azure.com",
-            "AZURE_OPENAI_DEPLOYMENT=gpt-5-mini",
+            "AZURE_OPENAI_DEPLOYMENT=gpt-4.1",
         ],
         "azure_extra": '<h3>Grant the three identities their required roles</h3><p>An instructor or owner with role-assignment rights should run this once after resource creation. Replace the names with yours. Role assignments can take a few minutes to propagate.</p>'
         + code('$resourceGroup = "<your-student-resource-group>"\n'
@@ -667,7 +667,7 @@ def make_setup_page():
             '<strong>Subscription and names:</strong> read the selected subscription and combine its prefix with a student tag so classmates get separate resources.',
             '<strong>Resource group and Storage:</strong> create a dedicated group, private Blob container, and upload the original course documents. Blob upload does not create Search chunks.',
             '<strong>Search:</strong> create a Basic service and an empty <code>rag-basic</code> index. Lab 01’s builder later adds its access fields and documents.',
-            '<strong>Foundry:</strong> create a resource/project, deploy <code>gpt-5-mini</code> and <code>text-embedding-3-large</code>, then save endpoints and keys to <code>.env.generated</code>.',
+            '<strong>Foundry:</strong> create a resource/project, deploy <code>gpt-4.1</code> and <code>text-embedding-3-large</code>, then save endpoints and keys to <code>.env.generated</code>.',
         ])
         + f'<details><summary>Read the complete embedded PowerShell setup script</summary><pre><code>{setup_source}</code></pre></details>'
         + '<h3><a href="./search_index.json">search_index.json</a></h3>'
@@ -678,11 +678,11 @@ def make_setup_page():
         section("goal", "", "What this setup creates", '<p><strong>Student resource group → Storage + Azure AI Search + Foundry project → two model deployments → generated connection file.</strong> Run this once for your dedicated student resources. Later labs reuse them and create their own indexes.</p>'),
         section("prereq", 1, "Check prerequisites", '<p>Use PowerShell, Python 3.11, Azure CLI 2.80 or later, a subscription with resource creation and model deployment rights, and quota in <code>eastus</code>. Each student needs a unique lowercase tag of 3–8 letters or digits, such as <code>s01</code>. These resources can incur charges.</p>' + code('python --version\naz version\nTest-Path ".\\Knowledge Base\\PDF_Files"\nTest-Path .\\00_setup_environment\\setup.ps1')),
         section("python", 2, "Prepare Python for later labs", '<p>Provisioning uses Azure CLI and PowerShell. Create the classic course environment so Lab 01 and later classic RAG apps can run after setup:</p>' + code('python -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install -r .\\requirements.txt\n.\\.venv\\Scripts\\python.exe -m pip check') + '<p>Lab 05 uses its separate <code>.venv-foundry</code> because its SDK has different dependency versions.</p>'),
-        section("azure", 3, "Select a subscription and create resources", '<p>Use your assigned subscription. For a shared class subscription, the unique tag prevents resource-name collisions. Replace <code>s01</code> with your assigned tag.</p>' + code('az login\naz account set --subscription "<subscription-id>"\naz account show --query "{subscription:id,name:name}" --output table\n.\\00_setup_environment\\setup.ps1 -StudentTag s01') + '<p>The script requests capacity 10 for each deployment. If a model version, SKU, region, or quota is unavailable, use an instructor-provided deployment and configure each lesson’s <code>.env</code> with its actual names. If you already have assigned resources, skip provisioning and use the existing-resource route in that lesson’s HTML.</p>'),
+        section("azure", 3, "Select a subscription and create resources", '<p>Use your assigned subscription. For a shared class subscription, the unique tag prevents resource-name collisions. Replace <code>s01</code> with your assigned tag.</p>' + code('az login\naz account set --subscription "<subscription-id>"\naz account show --query "{subscription:id,name:name}" --output table\n.\\00_setup_environment\\setup.ps1 -StudentTag s01') + '<p>If your instructor assigned a resource group, use your assigned student tag; the script reuses that group and its region. You can also pass -ResourceGroupName with the assigned group name. The script enables Search key and Entra authentication, creates the Search and project managed identities, and assigns their scoped service roles. The script requests capacity 10 for each deployment. If a model version, SKU, region, or quota is unavailable, use an instructor-provided deployment and configure each lesson’s <code>.env</code> with its actual names. If you already have assigned resources, skip provisioning and use the existing-resource route in that lesson’s HTML.</p>'),
         section("scripts", 4, "Understand the setup files", scripts),
-        section("run", 5, "Inspect the result", '<p>Expect <code>Setup complete</code> and <code>00_setup_environment/.env.generated</code>. Check resource names without printing keys:</p>' + code('$subscriptionPrefix = (az account show --query id --output tsv).Split(\'-\')[0]\n$labGroup = "rg-rag-s01$subscriptionPrefix"\naz resource list --resource-group $labGroup --query "[].{name:name,type:type}" --output table\nTest-Path .\\00_setup_environment\\.env.generated') + '<p>Do not post <code>.env.generated</code>; it contains admin and model keys. Copy its values into each lab’s <code>.env</code> as that lab instructs. The original Blob files are not yet searchable; run the lesson builder next.</p>'),
+        section("run", 5, "Inspect the result", '<p>Expect <code>Setup complete</code> and <code>00_setup_environment/.env.generated</code>. Check resource names without printing keys:</p>' + code('$labGroup = ((Select-String -Path .\\00_setup_environment\\.env.generated -Pattern "^AZURE_RESOURCE_GROUP=").Line -split "=", 2)[1]\naz resource list --resource-group $labGroup --query "[].{name:name,type:type}" --output table\nTest-Path .\\00_setup_environment\\.env.generated') + '<p>Do not post <code>.env.generated</code>; it contains admin and model keys. Copy its values into each lab’s <code>.env</code> as that lab instructs. The original Blob files are not yet searchable; run the lesson builder next.</p>'),
         section("test", 6, "Run a first question", '<p>Continue to <a href="../01_basic_rag_diagnose/lab_01_exercise.html">Lab 01</a>. After its builder uploads chunks, ask: <strong>What does SEC-114 require for laptops?</strong> Expect an answer citing <code>SEC-114</code>. A successful setup alone does not answer this question because the Search index starts empty.</p>'),
-        section("cleanup", 7, "Delete your student resources", '<p>After every course lab is finished, check the selected subscription and delete only the resource group made with your tag:</p>' + code('az account set --subscription "<subscription-id>"\naz group list --query "[?starts_with(name, \'rg-rag-\')].name" --output table\naz group delete --name "<your-exact-student-resource-group>" --yes') + '<div class="callout warn">Deleting a resource group deletes its Search, Foundry, Storage, indexes, models, and data. Keep instructor-owned shared resources.</div>'),
+        section("cleanup", 7, "Delete your student resources", '<p>After every course lab is finished, check the selected subscription and delete only the resource group made with your tag:</p>' + code('az account set --subscription "<subscription-id>"\naz group list --query "[].name" --output table\naz group delete --name "<your-exact-student-resource-group>" --yes') + '<div class="callout warn">Deleting a resource group deletes its Search, Foundry, Storage, indexes, models, and data. Keep instructor-owned shared resources.</div>'),
         section("references", "", "Reference documentation", '<ul><li><a href="https://learn.microsoft.com/en-us/azure/search/search-manage-azure-cli">Azure AI Search CLI</a></li><li><a href="https://learn.microsoft.com/en-us/azure/foundry/tutorials/quickstart-create-foundry-resources">Foundry resources and deployments</a></li><li><a href="https://learn.microsoft.com/en-us/azure/azure-resource-manager/management/delete-resource-group">Delete a resource group</a></li></ul>'),
     ]
     return f'''<!doctype html>

@@ -1,6 +1,8 @@
 param(
     [ValidatePattern('^[a-z0-9]{3,8}$')]
-    [string]$StudentTag = ''
+    [string]$StudentTag = '',
+    [string]$ResourceGroupName = '',
+    [string]$Location = ''
 )
 
 # Stop if an Azure CLI command fails instead of continuing with half-created resources.
@@ -13,19 +15,30 @@ function Invoke-Az {
 $SubscriptionId = (Invoke-Az account show --query id --output tsv).Trim()
 $Suffix = $SubscriptionId.Split('-')[0]
 $NameSuffix = if ($StudentTag) { "$StudentTag$Suffix" } else { $Suffix }
-$Location = "eastus"
 $ChatCapacity = 10
 $EmbeddingCapacity = 10
 
 $CourseDir = Split-Path -Parent $PSScriptRoot
-$ResourceGroup = "rg-rag-$NameSuffix"
+# Reuse an instructor-assigned classroom group when the signed-in student has one.
+if (-not $ResourceGroupName) {
+    $AccountName = (Invoke-Az account show --query user.name --output tsv).Trim()
+    $AllGroups = (Invoke-Az group list --output json) -join [Environment]::NewLine
+    $AssignedGroups = @($AllGroups | ConvertFrom-Json | Where-Object {
+        $_.tags.course -eq 'AdvancedRAG' -and $_.tags.student -eq $AccountName
+    } | Select-Object -ExpandProperty name)
+    if ($AssignedGroups.Count -eq 1 -and $AssignedGroups[0]) { $ResourceGroupName = $AssignedGroups[0].Trim() }
+}
+$ResourceGroup = if ($ResourceGroupName) { $ResourceGroupName } else { "rg-rag-$NameSuffix" }
+if (-not $Location) {
+    $Location = if ($ResourceGroupName) { (Invoke-Az group show --name $ResourceGroupName --query location --output tsv).Trim() } else { 'eastus' }
+}
 $StorageAccount = "ragstore$NameSuffix"
 $Container = "knowledge-base"
 $SearchService = "rag-search-$NameSuffix"
 $IndexName = "rag-basic"
 $FoundryAccount = "rag-foundry-$NameSuffix"
 $FoundryProject = "rag-course"
-$ChatDeployment = "gpt-5-mini"
+$ChatDeployment = "gpt-4.1"
 $EmbeddingDeployment = "text-embedding-3-large"
 
 Write-Host "Subscription: $SubscriptionId"
@@ -53,7 +66,9 @@ Remove-Item Env:AZURE_STORAGE_KEY
 # 3. Create Azure AI Search and the empty vector index used by Lab 01.
 Invoke-Az search service create `
     --name $SearchService --resource-group $ResourceGroup `
-    --location $Location --sku basic --semantic-search free --output none
+    --location $Location --sku basic --semantic-search free `
+    --replica-count 1 --partition-count 1 --identity-type SystemAssigned `
+    --auth-options aadOrApiKey --aad-auth-failure-mode http401WithBearerChallenge --output none
 $SearchKey = Invoke-Az search admin-key show `
     --service-name $SearchService --resource-group $ResourceGroup `
     --query primaryKey --output tsv
@@ -71,13 +86,23 @@ Invoke-Az cognitiveservices account create `
     --allow-project-management true --yes --output none
 Invoke-Az cognitiveservices account project create `
     --name $FoundryAccount --resource-group $ResourceGroup `
-    --project-name $FoundryProject --location $Location --output none
+    --project-name $FoundryProject --location $Location --assign-identity --output none
+
+# Agentic RAG service-to-service authorization. Classroom delegation permits only these roles.
+$SearchPrincipal = (Invoke-Az search service show --name $SearchService --resource-group $ResourceGroup --query identity.principalId --output tsv).Trim()
+$ProjectPrincipal = (Invoke-Az cognitiveservices account project show --name $FoundryAccount --resource-group $ResourceGroup --project-name $FoundryProject --query identity.principalId --output tsv).Trim()
+$FoundryScope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.CognitiveServices/accounts/$FoundryAccount"
+$SearchScope = "/subscriptions/$SubscriptionId/resourceGroups/$ResourceGroup/providers/Microsoft.Search/searchServices/$SearchService"
+Invoke-Az role assignment create --assignee-object-id $SearchPrincipal --assignee-principal-type ServicePrincipal `
+    --role "Cognitive Services User" --scope $FoundryScope --output none
+Invoke-Az role assignment create --assignee-object-id $ProjectPrincipal --assignee-principal-type ServicePrincipal `
+    --role "Search Index Data Reader" --scope $SearchScope --output none
 
 # 5. Deploy a chat model and the embedding model used by the labs.
 Invoke-Az cognitiveservices account deployment create `
     --name $FoundryAccount --resource-group $ResourceGroup `
-    --deployment-name $ChatDeployment --model-name gpt-5-mini `
-    --model-version 2025-08-07 --model-format OpenAI `
+    --deployment-name $ChatDeployment --model-name gpt-4.1 `
+    --model-version 2025-04-14 --model-format OpenAI `
     --sku-name GlobalStandard --sku-capacity $ChatCapacity --output none
 Invoke-Az cognitiveservices account deployment create `
     --name $FoundryAccount --resource-group $ResourceGroup `
@@ -115,3 +140,4 @@ $Lines = @(
 
 Write-Host "Setup complete. Lab 01 index: $IndexName (empty until build_index.py runs)."
 Write-Host "Connection values were saved in $OutputFile."
+Write-Host "Before Lab 05, allow the new managed-identity role assignments to propagate."
