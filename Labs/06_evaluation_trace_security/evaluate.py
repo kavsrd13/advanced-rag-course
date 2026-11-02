@@ -1,5 +1,7 @@
 import csv
+import json
 import os
+import re
 import time
 from pathlib import Path
 
@@ -61,6 +63,12 @@ def generate_answer(question, chunks):
     return response.choices[0].message.content
 
 
+def has_supported_citation(answer, chunks):
+    bracket_text = " ".join(re.findall(r"\[([^\[\]]+)\]", answer))
+    return any(re.search(r"(?<![\w-])" + re.escape(chunk["policyId"]) + r"(?![\w-])", bracket_text)
+               for chunk in chunks)
+
+
 def main():
     dataset_path = (
         Path(__file__).resolve().parents[1]
@@ -72,6 +80,7 @@ def main():
         questions = list(csv.DictReader(file))
 
     source_recalls = []
+    records = []
     citation_results = []
 
     # Run the same fixed questions after every RAG change.
@@ -80,19 +89,30 @@ def main():
         chunks = retrieve(item["question"])
         answer = generate_answer(item["question"], chunks)
 
-        expected_sources = [source.strip() for source in item["expected_sources"].split("+")]
+        expected_sources = [source.strip() for source in item["expected_sources"].split("+") if source.strip() not in {"", "None"}]
         retrieved_sources = {chunk["source"].rsplit(".", 1)[0] for chunk in chunks}
         matched_sources = sum(source in retrieved_sources for source in expected_sources)
-        source_recall = matched_sources / len(expected_sources)
-        has_citation = "[" in answer and "]" in answer
+        source_recall = matched_sources / len(expected_sources) if expected_sources else None
+        has_citation = has_supported_citation(answer, chunks)
 
-        source_recalls.append(source_recall)
-        citation_results.append(has_citation)
+        if source_recall is not None:
+            source_recalls.append(source_recall)
+            citation_results.append(has_citation)
+        records.append({"query": item["question"], "response": answer,
+                        "context": "\n\n".join(f"[{c['policyId']}] {c['content']}" for c in chunks),
+                        "ground_truth": item["expected_answer"], "expected_sources": expected_sources,
+                        "test_type": item["test_type"], "chunks": chunks,
+                        "source_recall": source_recall, "has_supported_citation_id": has_citation,
+                        "seconds": time.perf_counter() - start})
         print(
-            f"source_recall={source_recall:.2f} | citation={has_citation} | "
+            f"source_recall={source_recall} | citation={has_citation} | "
             f"seconds={time.perf_counter() - start:.2f} | {item['question']}"
         )
 
+    output = Path(__file__).with_name("results")
+    output.mkdir(exist_ok=True)
+    (output / "rag_outputs.jsonl").write_text("\n".join(json.dumps(row, ensure_ascii=False) for row in records) + "\n", encoding="utf-8")
+    print("Saved responses, context and retrieval traces to", output / "rag_outputs.jsonl")
     print("\nAVERAGE SOURCE RECALL:", round(sum(source_recalls) / len(source_recalls), 2))
     print("CITATION RATE:", round(sum(citation_results) / len(citation_results), 2))
 

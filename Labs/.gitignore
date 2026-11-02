@@ -6,4 +6,5 @@ __pycache__/
 03c_graph_rag/graph_db/
 .venv-foundry/
 .venv-lab01/
+.venv-eval/
 Workshop_Admin/private/
