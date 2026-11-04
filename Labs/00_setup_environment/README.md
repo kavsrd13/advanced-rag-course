@@ -48,4 +48,23 @@ The setup enables Search API-key and Entra authentication, gives Search and the 
 
 Classic RAG builders use a Search admin key. With Entra authentication, Search Index Data Contributor permits both loading and reading documents; Search Index Data Reader provides query-only access. Contributor covers management operations such as index creation and listing service keys. The classroom explicitly assigns both Search data roles for teaching clarity.
 
-GPT-4.1 is the default chat/judge deployment and text-embedding-3-large supplies 3,072-dimensional embeddings. GPT-5.2 is also permitted by classroom policy; provisioned deployments and capacities above 10 are blocked. Use separate environments for classic RAG, Foundry agents and Foundry evaluators. The five-evaluator lab uses no Groundedness Pro service.
+GPT-4.1 is the default chat/judge deployment and text-embedding-3-large supplies 3,072-dimensional embeddings. The script requests capacity 10 for each deployment. The instructor removed the classroom model, SKU and capacity deny policies; Azure quota and regional availability still apply. Use separate environments for classic RAG, Foundry agents and Foundry evaluators. The five-evaluator lab uses no Groundedness Pro service.
+
+## Certificate errors on corporate networks
+
+The Search index request uses native PowerShell `Invoke-RestMethod`, which uses Windows certificate trust. This supports a corporate HTTPS inspection certificate already installed by IT in the Windows trusted certificate store. HTTPS certificate verification remains enabled.
+
+If the previous script failed at `/indexes/rag-basic` with `CERTIFICATE_VERIFY_FAILED`, download the updated `setup.ps1` and rerun it with **the same student tag, group and region**. The script reuses the same resource names. If an existing `rag-basic` index already contains lab data, use the CA-bundle configuration below and resume your lab rather than reprovisioning its schema.
+
+If native PowerShell also reports an untrusted certificate, ask IT to install the approved corporate root CA and its certificate chain. The affected student workstation must trust that issuer; changing Azure IAM cannot repair local certificate trust.
+
+If another Azure CLI command or a later Python lab has the same certificate error, obtain an approved **PEM CA bundle containing the normal public roots plus the corporate CA chain** from IT, then set these in the same PowerShell window before rerunning:
+
+```powershell
+$env:REQUESTS_CA_BUNDLE = 'C:\Certificates\approved-ca-bundle.pem'
+$env:SSL_CERT_FILE = $env:REQUESTS_CA_BUNDLE
+```
+
+The example path must point to the actual IT-provided bundle. `REQUESTS_CA_BUNDLE` covers Azure CLI and Requests-based SDK clients; `SSL_CERT_FILE` covers clients such as HTTPX/OpenAI that honor that setting. Set them again in each new terminal. Do not disable certificate verification or use `--skip-certificate-check`.
+
+See [Microsoft's Azure CLI proxy guidance](https://learn.microsoft.com/en-us/cli/azure/use-azure-cli-successfully-troubleshooting#work-behind-a-proxy).

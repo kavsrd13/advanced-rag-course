@@ -74,9 +74,11 @@ $SearchKey = Invoke-Az search admin-key show `
     --query primaryKey --output tsv
 $IndexFile = Join-Path $PSScriptRoot 'search_index.json'
 $SearchUri = "https://${SearchService}.search.windows.net/indexes/${IndexName}?api-version=2024-07-01"
-Invoke-Az rest --method put --skip-authorization-header `
-    --uri $SearchUri --headers "api-key=$SearchKey" 'Content-Type=application/json' `
-    --body "@$IndexFile" --output none
+# Native PowerShell uses Windows certificate trust, including IT-installed proxy CAs.
+# Certificate validation stays enabled; stop setup if the HTTPS request fails.
+Invoke-RestMethod -Method Put -Uri $SearchUri `
+    -Headers @{ 'api-key' = "$SearchKey".Trim() } `
+    -InFile $IndexFile -ContentType 'application/json' -ErrorAction Stop | Out-Null
 
 # 4. Create a Microsoft Foundry resource and project.
 Invoke-Az cognitiveservices account create `
