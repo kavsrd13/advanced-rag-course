@@ -1,0 +1,2 @@
+Luma P500 finishing module: NS-7429 field recovery
+NS-7429 indicates that a replacement finishing module has not completed its latch calibration. For a Luma P500 that reports this code immediately after replacement, keep the queued job on hold. Open the finishing cover, reseat the blue latch, close the cover, and run Calibrate Finisher from Maintenance. Resume the held job after calibration succeeds. Do not clear the queue or resend the job. If calibration fails twice, stop and contact hardware support. This procedure does not apply to the scanner feed sensor.

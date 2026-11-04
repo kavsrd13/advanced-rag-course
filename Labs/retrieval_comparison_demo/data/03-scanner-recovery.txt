@@ -1,0 +1,2 @@
+Luma P500 scanner feed sensor: NS-7428 recovery
+NS-7428 means the scanner feed sensor is obstructed. Cancel the current scan, lift the scanner feeder, remove the small torn paper strip from the sensor window, and close the feeder. Start a new scan after the sensor indicator turns green. Do not recalibrate the finishing module for this fault. The scanner procedure is different from finishing module latch calibration for NS-7429, even though both codes appear on the same device display.

@@ -1,0 +1,2 @@
+Luma P500 service-desk error reference
+The Luma P500 reports NS-7429 for finishing module latch calibration, NS-7428 for a scanner feed sensor obstruction, and NS-7430 for depleted staples. A code identifies a subsystem, not a complete recovery procedure. Record the exact code, device serial number, and recent maintenance before opening a support ticket. A description such as paper problem or printer stopped is not sufficient to identify which subsystem needs attention. This reference lists symptoms; use the relevant field recovery procedure for repair steps.

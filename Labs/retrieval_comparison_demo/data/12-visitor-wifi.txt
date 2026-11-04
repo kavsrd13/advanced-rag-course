@@ -1,0 +1,2 @@
+Visitor wireless network
+Visitors may use the guest wireless network for public internet browsing. Guest wireless does not provide connectivity to internal Northstar applications, printers, or corporate file shares. Employees should use the managed network for corporate work. Guest wireless credentials cannot substitute for employee identity verification, approved remote connectivity, or contractor access authorization.

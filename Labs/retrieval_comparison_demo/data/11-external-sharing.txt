@@ -1,0 +1,2 @@
+Sharing Internal project material with a supplier
+To share an approved Internal project document with a supplier, use a named recipient link in the company collaboration portal. Set an expiration date and disable anonymous access. Confirm the supplier's identity before sending the link. Do not send Restricted forecasts through this process. External sharing approval and contractor device authorization are separate decisions; approving a link does not approve a personal laptop for Restricted work.

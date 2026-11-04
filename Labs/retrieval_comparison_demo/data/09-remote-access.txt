@@ -1,0 +1,2 @@
+General remote connectivity overview
+Remote staff connect to Northstar systems through the approved secure access gateway with multifactor authentication. The gateway establishes connectivity; it does not decide which records a person may read. Device compliance, account authorization, and information classification still apply. A working network connection does not authorize personal laptop use for Restricted material. Consult the employee or contractor policy for the actual working environment requirements.
