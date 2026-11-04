@@ -1,6 +1,6 @@
 """Check student exercise pages against the files they teach."""
 
-from html import escape
+from html import escape, unescape
 from html.parser import HTMLParser
 from pathlib import Path
 from urllib.parse import unquote, urlsplit
@@ -42,6 +42,12 @@ def main():
             continue
         page = pages[0]
         source = page.read_text(encoding="utf-8")
+        for required in ['id="get-code"', 'git clone https://github.com/kavsrd13/advanced-rag-course.git',
+                         'advanced-rag-course\\Labs', 'py -3.11', 'PYTHONIOENCODING']:
+            if required not in source:
+                failures.append(f"{page.name}: missing student startup instruction {required}")
+        if source.find('git clone ') > source.find('-m venv'):
+            failures.append(f"{page.name}: environment setup precedes repository instructions")
         parser = PageParser()
         parser.feed(source)
         for href in parser.hrefs:
@@ -77,6 +83,31 @@ def main():
     sequence_source = sequence_index.read_text(encoding="utf-8")
     sequence_parser = PageParser()
     sequence_parser.feed(sequence_source)
+    numbers = [int(x) for x in re.findall(r'<div class="num">Lab (\d+)</div>', sequence_source)]
+    numbers += [int(x) for x in re.findall(r'<a href="lab_0[78]_exercise.html">Lab (\d+)', sequence_source)]
+    if numbers != list(range(1, 24)):
+        failures.append(f"index.html: expected sequential labs 1-23, got {numbers}")
+    starter = sequence_index.parent / "start_here.html"
+    if not starter.exists() or 'start_here.html' not in sequence_source:
+        failures.append("index.html: missing student preparation guide")
+    else:
+        starter_source = starter.read_text(encoding="utf-8")
+        for required in ['git clone https://github.com/kavsrd13/advanced-rag-course.git',
+                         'mslearn-ai-studio.git', 'mslearn-ai-agents.git', 'py -3.11', 'py -3.13',
+                         '.venv-foundry', '.venv-eval', 'MFA']:
+            if required not in starter_source:
+                failures.append(f"start_here.html: missing {required}")
+        starter_parser = PageParser()
+        starter_parser.feed(starter_source)
+        for href in starter_parser.hrefs:
+            parsed = urlsplit(href)
+            if parsed.scheme in {'http', 'https'}:
+                continue
+            if not parsed.path and parsed.fragment:
+                if parsed.fragment not in starter_parser.ids:
+                    failures.append(f"start_here.html: missing #{parsed.fragment}")
+            elif not (starter.parent / unquote(parsed.path)).exists():
+                failures.append(f"start_here.html: broken link {href}")
     for href in sequence_parser.hrefs:
         parsed = urlsplit(href)
         if parsed.scheme in {"http", "https"}:
@@ -117,6 +148,8 @@ def main():
         copied_page = sequence_index.parent / filename
         copied_parser = PageParser()
         copied_parser.feed(copied_page.read_text(encoding="utf-8"))
+        if 'start_here.html' not in copied_page.read_text(encoding="utf-8"):
+            failures.append(f"{filename}: missing course preparation link")
         for href in copied_parser.hrefs:
             parsed = urlsplit(href)
             if parsed.scheme in {"http", "https"} or (not parsed.path and parsed.fragment):

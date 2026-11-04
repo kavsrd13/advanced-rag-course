@@ -60,7 +60,19 @@
     <strong>Follow in order</strong>
     <a href="#outcome">Outcome</a><a href="#prerequisites">1. Prerequisites</a><a href="#python">2. Python environment</a><a href="#azure">3. Azure resources</a><a href="#config">4. Configure the lab</a><a href="#code">5. Understand the scripts</a><a href="#build">6. Build the index</a><a href="#run">7. Run the app</a><a href="#test">8. Test prompts</a><a href="#cleanup">9. Clean up</a>
   </nav>
-  <main>
+  <main><section id="get-code"><h2><span class="step">0</span>Clone the course and open the Labs folder</h2><p>Use <strong>Windows PowerShell</strong>. Install <a href="https://git-scm.com/downloads">Git</a>, <a href="https://www.python.org/downloads/">Python 3.11</a>, <a href="https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows">Azure CLI</a> and <a href="https://code.visualstudio.com/">VS Code</a>. Reopen PowerShell after installing. A script link opens source for reading. Clone the complete repository to run the scripts with their data and dependencies.</p><pre><code>git --version
+py -3.11 --version
+az version
+New-Item -ItemType Directory -Path &quot;$env:USERPROFILE\AI-Course&quot; -Force | Out-Null
+Set-Location &quot;$env:USERPROFILE\AI-Course&quot;
+git clone https://github.com/kavsrd13/advanced-rag-course.git
+Set-Location .\advanced-rag-course\Labs
+Get-Location
+Test-Path .\requirements.txt
+Test-Path &quot;.\Knowledge Base\Lab_Support\metadata.csv&quot;
+$env:PYTHONIOENCODING = &quot;utf-8&quot;</code></pre><p><strong>Expected:</strong> the folder ends in <code>advanced-rag-course\Labs</code> and both checks return <code>True</code>. Run every command below from this folder. The UTF-8 setting prevents Windows console errors when printing model answers.</p><h3>Already cloned, or returning in a new terminal?</h3><pre><code>Set-Location &quot;$env:USERPROFILE\AI-Course\advanced-rag-course\Labs&quot;
+git pull --ff-only
+$env:PYTHONIOENCODING = &quot;utf-8&quot;</code></pre><p>Use your actual checkout path if different. Clone once; reuse it for later labs. If Git reports local edits, save your work and ask the instructor before updating. Each lab reads its own <code>.env</code>; Git does not supply credentials. The run commands use each virtual environment directly, so activation is optional.</p><p>For Azure operations, sign in with your assigned student account using <code>az login</code>, complete MFA, and select your assigned subscription. For certificate errors, follow <a href="../Labs/00_setup_environment/lab_00_exercise.html#certificates">the certificate troubleshooting steps</a>. If PowerShell blocks <code>setup.ps1</code>, use <code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned</code> for this terminal, subject to organization policy.</p></section>
     <section id="outcome">
       <h2>What you will prove</h2>
       <p>The pipeline is <strong>PDFs → chunks with <code>allowedUsers</code> → Azure AI Search index → user filter → top passages → answer model</strong>. The access filter runs in Search before passages reach the model.</p>
@@ -89,30 +101,18 @@ Test-Path ".\01_basic_rag_diagnose\build_index.py"</code></pre>
     <section id="python">
       <h2><span class="step">2</span>Create an isolated Python environment</h2>
       <p>Run these commands once. The lab-specific requirements avoid packages needed only by later lessons.</p>
-      <pre><code>python -m venv .venv-lab01
+      <pre><code>py -3.11 -m venv .venv-lab01
 .\.venv-lab01\Scripts\python.exe -m pip install -r .\01_basic_rag_diagnose\requirements.txt
 .\.venv-lab01\Scripts\python.exe -m pip check</code></pre>
       <p><code>pip check</code> should say <code>No broken requirements found</code>. The dependency list is <a href="../Labs/01_basic_rag_diagnose/requirements.txt">requirements.txt</a>; it pins the Azure Search SDK, OpenAI SDK, PDF reader, pandas, dotenv, and Gradio.</p>
     </section>
 
-    <section id="azure">
-      <h2><span class="step">3</span>Create or reuse Azure resources</h2>
-      <p>Choose <strong>one</strong> route. Both routes need an Azure AI Search service and a Foundry resource with chat and embedding deployments. The setup script names them <code>gpt-5-mini</code> and <code>text-embedding-3-large</code>; existing deployments may have other names if the <code>.env</code> matches. The Python builder defines and populates the Lab 01 index, so you do not need to create it manually.</p>
-      <h3>Route A · New student resources</h3>
-      <p>Assign each student a unique 3–8 character lowercase tag such as <code>s01</code>. The setup script makes a separate resource group and globally unique service names using the tag plus the subscription prefix. It also creates Storage for later labs and writes endpoints and keys to <code>00_setup_environment/.env.generated</code>.</p>
-      <pre><code>az login
-az account set --subscription "&lt;subscription-id&gt;"
-az account show --query "{subscription:id,name:name}" --output table
-.\00_setup_environment\setup.ps1 -StudentTag s01</code></pre>
-      <p>Replace <code>s01</code> with your assigned tag. The script uses <code>eastus</code>, capacity 10 for each model, and creates a group such as <code>rg-rag-s01&lt;first-eight-characters-of-subscription-id&gt;</code>. Check that the final message says <code>Setup complete</code>. To inspect the resulting resources without printing keys:</p>
-      <pre><code>$subscriptionPrefix = (az account show --query id --output tsv).Split('-')[0]
-$labGroup = "rg-rag-s01$subscriptionPrefix"
-az resource list --resource-group $labGroup --query "[].{name:name,type:type}" --output table</code></pre>
-      <p>If deployment fails because a model version, SKU, region, or quota is unavailable, check availability in Foundry and ask the instructor for the class’s working deployment; the rest of the lab can use Route B. See the <a href="../Labs/00_setup_environment/setup.ps1">setup script</a> and <a href="../Labs/00_setup_environment/README.md">setup notes</a>.</p>
-      <h3>Route B · Existing classroom resources</h3>
-      <p>Get these values from the instructor or your own resource group: Search endpoint and admin key; Foundry OpenAI endpoint and key; both deployment names. You need index creation/upload permission for Search and model call permission for Foundry. Use a unique index name such as <code>rag-01-s01</code> when several students share one Search service.</p>
-      <div class="callout">For Route B, skip the setup script. Do not copy another student’s <code>.env</code> or change a shared index name.</div>
-    </section>
+    <section id="azure"><h2>3. Create or reuse Azure resources</h2><p>Choose one route. Route A creates separate resources in your own student resource group. Route B uses resources already assigned to you. Run all commands from the course <code>Labs</code> folder.</p><h3>Route A · Create student resources</h3><p>Use a unique lowercase tag of 3–8 letters or digits. The setup script creates a Search service, Foundry resource and project, chat and embedding deployments, and Storage for the course. Model availability and quota vary by subscription.</p><pre><code>az login
+az account set --subscription &quot;&lt;subscription-id&gt;&quot;
+az account show --query &quot;{subscription:id,name:name}&quot; --output table
+$StudentTag = Read-Host &quot;Your assigned student tag&quot;
+$ResourceGroupName = Read-Host &quot;Your assigned resource group name&quot;
+.\00_setup_environment\setup.ps1 -StudentTag $StudentTag -ResourceGroupName $ResourceGroupName</code></pre><p>Enter your actual assigned tag and group. If you are reusing resources, skip provisioning. The script writes endpoints and keys to <code>00_setup_environment/.env.generated</code>. Check for <code>Setup complete</code> before continuing. See the <a href="../Labs/00_setup_environment/lab_00_exercise.html">Lab 00 setup exercise</a>.</p><h3>Route B · Use assigned resources</h3><p>Use an assigned Search service and Foundry model deployments. You need Search index creation and upload access plus model call access. Choose a unique index name on a shared service and copy the actual connection values into this lab’s <code>.env</code>. Never copy another student’s key file.</p></section>
 
     <section id="config">
       <h2><span class="step">4</span>Configure <code>.env</code></h2>
@@ -121,14 +121,14 @@ az resource list --resource-group $labGroup --query "[].{name:name,type:type}" -
       <pre><code>Copy-Item .\00_setup_environment\.env.generated .\01_basic_rag_diagnose\.env -Force
 Add-Content .\01_basic_rag_diagnose\.env "AZURE_SEARCH_INDEX=rag-basic"</code></pre>
       <h3>If you used Route B</h3>
-      <p>Create or edit <code>01_basic_rag_diagnose/.env</code> with the values for your assigned resources:</p>
+      <p>Run <code>notepad .\01_basic_rag_diagnose\.env</code>, paste your assigned values below, and save as <code>.env</code> (not <code>.env.txt</code>):</p>
       <pre><code>AZURE_SEARCH_ENDPOINT=https://&lt;search-service&gt;.search.windows.net
 AZURE_SEARCH_API_KEY=&lt;search-admin-key&gt;
 AZURE_SEARCH_INDEX=rag-01-s01
 AZURE_OPENAI_ENDPOINT=https://&lt;foundry-resource&gt;.openai.azure.com
 AZURE_OPENAI_API_KEY=&lt;foundry-key&gt;
 AZURE_OPENAI_API_VERSION=2025-04-01-preview
-AZURE_OPENAI_DEPLOYMENT=gpt-5-mini
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1
 AZURE_OPENAI_EMBEDDING_DEPLOYMENT=text-embedding-3-large</code></pre>
       <p>The index name can differ, but keep the model deployment names equal to the deployments that actually exist. The <code>.env</code> file is ignored by Git.</p>
     </section>

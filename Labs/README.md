@@ -11,12 +11,28 @@ Both load the local `.env`. Neither imports the other. Their connection is the A
 
 Start with the [Lab 00 exercise](00_setup_environment/lab_00_exercise.html) if participants need to create Storage, Azure AI Search, a Foundry project, and the model deployments from Azure CLI.
 
+## Get the code first
+
+Install Git and Python 3.11, open Windows PowerShell, then run:
+
+```powershell
+New-Item -ItemType Directory -Path "$env:USERPROFILE\AI-Course" -Force | Out-Null
+Set-Location "$env:USERPROFILE\AI-Course"
+git clone https://github.com/kavsrd13/advanced-rag-course.git
+Set-Location .\advanced-rag-course\Labs
+py -3.11 --version
+Test-Path .\requirements.txt
+$env:PYTHONIOENCODING = "utf-8"
+```
+
+Run the lab commands from `advanced-rag-course\Labs`. Clone once; in a new terminal, return to that folder. See the [complete preparation guide](../exercise%20instruction/start_here.html) for repository choices, MFA, certificates and Microsoft Learning exercises that use Python 3.13. If updating an existing clean checkout, use `git pull --ff-only`; preserve local edits before updating.
+
 ## Run a lesson
 
 From this course folder, create the environment once:
 
 ```powershell
-python -m venv .venv
+py -3.11 -m venv .venv
 .\.venv\Scripts\python -m pip install -r requirements.txt
 ```
 

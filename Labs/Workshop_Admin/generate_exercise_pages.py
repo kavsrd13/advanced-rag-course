@@ -31,6 +31,34 @@ def shell_command(folder, script, args="", *, env=".venv"):
     return f'.\\{env}\\Scripts\\python.exe {quoted}{args}'
 
 
+def course_start():
+    return section("get-code", "0", "Clone the course and open the Labs folder", (
+        '<p>Use <strong>Windows PowerShell</strong>. Install <a href="https://git-scm.com/downloads">Git</a>, '
+        '<a href="https://www.python.org/downloads/">Python 3.11</a>, '
+        '<a href="https://learn.microsoft.com/en-us/cli/azure/install-azure-cli-windows">Azure CLI</a> '
+        'and <a href="https://code.visualstudio.com/">VS Code</a>. Reopen PowerShell after installing. '
+        'A script link opens source for reading. Clone the complete repository to run the scripts with their data and dependencies.</p>'
+        + code('git --version\npy -3.11 --version\naz version\n'
+               'New-Item -ItemType Directory -Path "$env:USERPROFILE\\AI-Course" -Force | Out-Null\n'
+               'Set-Location "$env:USERPROFILE\\AI-Course"\n'
+               'git clone https://github.com/kavsrd13/advanced-rag-course.git\n'
+               'Set-Location .\\advanced-rag-course\\Labs\nGet-Location\n'
+               'Test-Path .\\requirements.txt\nTest-Path ".\\Knowledge Base\\Lab_Support\\metadata.csv"\n'
+               '$env:PYTHONIOENCODING = "utf-8"')
+        + '<p><strong>Expected:</strong> the folder ends in <code>advanced-rag-course\\Labs</code> and both checks return <code>True</code>. '
+        'Run every command below from this folder. The UTF-8 setting prevents Windows console errors when printing model answers.</p>'
+        '<h3>Already cloned, or returning in a new terminal?</h3>'
+        + code('Set-Location "$env:USERPROFILE\\AI-Course\\advanced-rag-course\\Labs"\n'
+               'git pull --ff-only\n$env:PYTHONIOENCODING = "utf-8"')
+        + '<p>Use your actual checkout path if different. Clone once; reuse it for later labs. If Git reports local edits, save your work and ask the instructor before updating. '
+        'Each lab reads its own <code>.env</code>; Git does not supply credentials. '
+        'The run commands use each virtual environment directly, so activation is optional.</p>'
+        '<p>For Azure operations, sign in with your assigned student account using <code>az login</code>, complete MFA, and select your assigned subscription. '
+        'For certificate errors, follow <a href="../00_setup_environment/lab_00_exercise.html#certificates">the certificate troubleshooting steps</a>. '
+        'If PowerShell blocks <code>setup.ps1</code>, use <code>Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned</code> for this terminal, subject to organization policy.</p>'
+    ))
+
+
 def script_walkthrough(lab):
     parts = []
     for filename, notes in lab["scripts"]:
@@ -69,8 +97,8 @@ def azure_setup(lab):
         'Model availability and quota vary by subscription.</p>'
         + code('az login\naz account set --subscription "<subscription-id>"\n'
                'az account show --query "{subscription:id,name:name}" --output table\n'
-               '.\\00_setup_environment\\setup.ps1 -StudentTag s01')
-        + '<p>Replace <code>s01</code> with your assigned tag. The script writes endpoints and keys to '
+               '$StudentTag = Read-Host "Your assigned student tag"\n$ResourceGroupName = Read-Host "Your assigned resource group name"\n.\\00_setup_environment\\setup.ps1 -StudentTag $StudentTag -ResourceGroupName $ResourceGroupName')
+        + '<p>Enter your actual assigned tag and group. If you are reusing resources, skip provisioning. The script writes endpoints and keys to '
         '<code>00_setup_environment/.env.generated</code>. Check for <code>Setup complete</code> before continuing. '
         'See the <a href="../00_setup_environment/lab_00_exercise.html">Lab 00 setup exercise</a>.</p>'
         '<h3>Route B · Use assigned resources</h3>'
@@ -91,8 +119,9 @@ def config_section(lab):
     additions = lab.get("env_additions", [])
     copy = f'Copy-Item .\\00_setup_environment\\.env.generated ".\\{folder}\\.env" -Force'
     if additions:
+        copy = '$StudentTag = Read-Host "Your assigned student tag for index names"\n' + copy
         copy += "\n" + "\n".join(
-            f'Add-Content ".\\{folder}\\.env" "{item}"' for item in additions
+            f'Add-Content ".\\{folder}\\.env" "{item.replace("s01", "$StudentTag")}"' for item in additions
         )
     completion = {
         "model": 'The builder creates the local JSON vector index.',
@@ -105,6 +134,7 @@ def config_section(lab):
         'The <code>.env</code> file contains keys; do not publish or screenshot it.</p>'
         + code(copy)
         + '<h3>After Route B</h3><p>Create or edit this lab’s <code>.env</code> with your assigned values:</p>'
+        + code(f'notepad ".\\{folder}\\.env"')
         + code("\n".join(lab["env_template"]))
         + '<p>The deployment names and index names in your file must match the resources you use. '
         + escape(completion) + '</p>'
@@ -119,13 +149,13 @@ def python_setup(lab):
         return (
             '<p>This script uses only the Python standard library. Create an isolated environment so the '
             'run command is consistent with the rest of the course; no packages need installing.</p>'
-            + code('python --version\npython -m venv .venv\n.\\.venv\\Scripts\\python.exe --version')
+            + code('py -3.11 --version\npy -3.11 -m venv .venv\n.\\.venv\\Scripts\\python.exe --version')
         )
     if lab["requirements"] == "foundry":
         return (
             '<p>Use a separate environment for the Foundry Agent SDK. Its OpenAI 3.x dependency differs '
             'from the older SDK pinned for the other lessons.</p>'
-            + code('python --version\npython -m venv .venv-foundry\n'
+            + code('py -3.11 --version\npy -3.11 -m venv .venv-foundry\n'
                    '.\\.venv-foundry\\Scripts\\python.exe -m pip install -r .\\05_agentic_rag_with_tools\\requirements.txt\n'
                    '.\\.venv-foundry\\Scripts\\python.exe -m pip check')
             + '<p>Expect <code>No broken requirements found</code>.</p>'
@@ -133,7 +163,7 @@ def python_setup(lab):
     return (
         '<p>Use Python 3.11. The root requirements are pinned for the classic Search and OpenAI SDK '
         'used by this lesson. You can reuse this environment for the other classic labs.</p>'
-        + code('python --version\npython -m venv .venv\n'
+        + code('py -3.11 --version\npy -3.11 -m venv .venv\n'
                '.\\.venv\\Scripts\\python.exe -m pip install -r .\\requirements.txt\n'
                '.\\.venv\\Scripts\\python.exe -m pip check')
         + '<p>Expect <code>No broken requirements found</code>. '
@@ -176,7 +206,7 @@ def make_page(lab):
     nav = "".join(
         f'<a href="#{anchor}">{escape(text)}</a>'
         for anchor, text in [
-            ("goal", "Goal"), ("prereq", "1. Prerequisites"), ("python", "2. Python environment"),
+            ("goal", "Goal"), ("get-code", "0. Clone and open Labs"), ("prereq", "1. Prerequisites"), ("python", "2. Python environment"),
             ("azure", "3. Azure resources"), ("config", "4. Configure"),
             ("scripts", "5. Understand scripts"), ("run", "6. Run in order"),
             ("test", "7. Test prompts"), ("cleanup", "8. Clean up"),
@@ -188,6 +218,7 @@ def make_page(lab):
     ) + lab.get("run_extra", "")
     sections = [
         section("goal", "", "What you will learn", lab["concept"]),
+        course_start(),
         section("prereq", 1, "Check prerequisites", lab["prerequisites"]),
         section("python", 2, "Create the Python environment", python_setup(lab)),
         section("azure", 3, "Create or reuse Azure resources", azure_setup(lab)),
@@ -571,7 +602,7 @@ LABS = [
             ("Build Lab 02’s index if it does not already exist", shell_command("02_hybrid_semantic_metadata", "build_index.py")),
             ("Run the seven-question evaluation", shell_command("06_evaluation_trace_security", "evaluate.py")),
         ],
-        "run_extra": '<h3>Install the evaluator environment</h3><p>Keep the classic RAG environment and the evaluation environment separate. The evaluator SDK uses newer dependencies.</p>' + code('python -m venv .venv-eval\n.\\.venv-eval\\Scripts\\python.exe -m pip install -r .\\06_evaluation_trace_security\\requirements.txt\n.\\.venv-eval\\Scripts\\python.exe -m pip check') + '<h3>Configure the judge</h3><p>In this lab’s .env, set AZURE_EVALUATION_DEPLOYMENT to your judge deployment name on the same Azure OpenAI resource. If omitted, it uses AZURE_OPENAI_DEPLOYMENT. No Foundry project endpoint is required. With GPT-5 or an o-series judge, include --reasoning-model as shown below; omit it for a non-reasoning judge such as GPT-4.1.</p><h3>Run a one-question check, then the dataset</h3>' + code('.\\.venv-eval\\Scripts\\python.exe .\\06_evaluation_trace_security\\evaluate_foundry.py --limit 1 --reasoning-model\n.\\.venv-eval\\Scripts\\python.exe .\\06_evaluation_trace_security\\evaluate_foundry.py --reasoning-model') + '<h3>Understand the five scores</h3><table><thead><tr><th>Evaluator</th><th>What it checks</th></tr></thead><tbody><tr><td>Document Retrieval</td><td>Ranking against expected sources: NDCG, XDCG, fidelity, relevance and holes.</td></tr><tr><td>Retrieval</td><td>How useful retrieved context is for the question.</td></tr><tr><td>Groundedness</td><td>Whether answer claims stay within the evidence.</td></tr><tr><td>Relevance</td><td>Whether the answer addresses the question.</td></tr><tr><td>Response Completeness (preview)</td><td>Whether the expected answer is covered.</td></tr></tbody></table><h3>Inspect the saved results</h3><p>results/rag_outputs.jsonl contains answers, exact context, sources and latency. results/foundry_scores.jsonl contains scores and judge reasoning. Judge metrics use a 1–5 scale with a default pass threshold of 3; Document Retrieval has its own metric scales. Source recall excludes the unsupported question, whose ranking metric is not applicable. Inspect abstention separately. Document labels are derived from the CSV expected-source list (4 for expected, 0 otherwise), not independently judged passage labels. Null means unscored, not passed. Brief expected answers limit completeness scoring. Citation ID presence does not prove claim support. Token quotas can cause 429 retries; start with one row. Copy result files before rerunning to compare changes. See <a href="./README.md">the lab reference</a> for further details.</p>',
+        "run_extra": '<h3>Install the evaluator environment</h3><p>Keep the classic RAG environment and the evaluation environment separate. The evaluator SDK uses newer dependencies.</p>' + code('py -3.11 -m venv .venv-eval\n.\\.venv-eval\\Scripts\\python.exe -m pip install -r .\\06_evaluation_trace_security\\requirements.txt\n.\\.venv-eval\\Scripts\\python.exe -m pip check') + '<h3>Configure the judge</h3><p>In this lab’s .env, set AZURE_EVALUATION_DEPLOYMENT to your judge deployment name on the same Azure OpenAI resource. If omitted, it uses AZURE_OPENAI_DEPLOYMENT. No Foundry project endpoint is required. The commands below use the default GPT-4.1 judge. For a GPT-5 or o-series reasoning judge, append --reasoning-model to the evaluator command.</p><h3>Run a one-question check, then the dataset</h3>' + code('.\\.venv-eval\\Scripts\\python.exe .\\06_evaluation_trace_security\\evaluate_foundry.py --limit 1\n.\\.venv-eval\\Scripts\\python.exe .\\06_evaluation_trace_security\\evaluate_foundry.py') + '<h3>Understand the five scores</h3><table><thead><tr><th>Evaluator</th><th>What it checks</th></tr></thead><tbody><tr><td>Document Retrieval</td><td>Ranking against expected sources: NDCG, XDCG, fidelity, relevance and holes.</td></tr><tr><td>Retrieval</td><td>How useful retrieved context is for the question.</td></tr><tr><td>Groundedness</td><td>Whether answer claims stay within the evidence.</td></tr><tr><td>Relevance</td><td>Whether the answer addresses the question.</td></tr><tr><td>Response Completeness (preview)</td><td>Whether the expected answer is covered.</td></tr></tbody></table><h3>Inspect the saved results</h3><p>results/rag_outputs.jsonl contains answers, exact context, sources and latency. results/foundry_scores.jsonl contains scores and judge reasoning. Judge metrics use a 1–5 scale with a default pass threshold of 3; Document Retrieval has its own metric scales. Source recall excludes the unsupported question, whose ranking metric is not applicable. Inspect abstention separately. Document labels are derived from the CSV expected-source list (4 for expected, 0 otherwise), not independently judged passage labels. Null means unscored, not passed. Brief expected answers limit completeness scoring. Citation ID presence does not prove claim support. Token quotas can cause 429 retries; start with one row. Copy result files before rerunning to compare changes. See <a href="./README.md">the lab reference</a> for further details.</p>',
         "prompts": [
             ("What password and authentication controls are required by SEC-114?", "Expected source: IT security standard; compare the source_recall line."),
             ("Which service manual does the Q2 review cite, and what recovery steps does it prescribe?", "Expected two sources; check both are in top retrieved passages."),
@@ -656,7 +687,7 @@ def make_setup_page():
     nav = "".join(
         f'<a href="#{anchor}">{text}</a>'
         for anchor, text in [
-            ("goal", "Goal"), ("prereq", "1. Prerequisites"), ("python", "2. Python environment"),
+            ("goal", "Goal"), ("get-code", "0. Clone and open Labs"), ("prereq", "1. Prerequisites"), ("python", "2. Python environment"),
             ("azure", "3. Create resources"), ("scripts", "4. Understand setup"),
             ("run", "5. Run and inspect"), ("test", "6. Test prompt"), ("cleanup", "7. Clean up"),
             ("certificates", "Certificate troubleshooting"),
@@ -677,9 +708,10 @@ def make_setup_page():
     )
     sections = [
         section("goal", "", "What this setup creates", '<p><strong>Student resource group → Storage + Azure AI Search + Foundry project → two model deployments → generated connection file.</strong> Run this once for your dedicated student resources. Later labs reuse them and create their own indexes.</p>'),
+        course_start(),
         section("prereq", 1, "Check prerequisites", '<p>Use PowerShell, Python 3.11, Azure CLI 2.80 or later, a subscription with resource creation and model deployment rights, and quota in <code>eastus</code>. Each student needs a unique lowercase tag of 3–8 letters or digits, such as <code>s01</code>. These resources can incur charges.</p>' + code('python --version\naz version\nTest-Path ".\\Knowledge Base\\PDF_Files"\nTest-Path .\\00_setup_environment\\setup.ps1')),
-        section("python", 2, "Prepare Python for later labs", '<p>Provisioning uses Azure CLI and PowerShell. Create the classic course environment so Lab 01 and later classic RAG apps can run after setup:</p>' + code('python -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install -r .\\requirements.txt\n.\\.venv\\Scripts\\python.exe -m pip check') + '<p>Lab 05 uses its separate <code>.venv-foundry</code> because its SDK has different dependency versions.</p>'),
-        section("azure", 3, "Select a subscription and create resources", '<p>Use your assigned subscription. For a shared class subscription, the unique tag prevents resource-name collisions. Replace <code>s01</code> with your assigned tag.</p>' + code('az login\naz account set --subscription "<subscription-id>"\naz account show --query "{subscription:id,name:name}" --output table\n.\\00_setup_environment\\setup.ps1 -StudentTag s01') + '<p>If your instructor assigned a resource group, use your assigned student tag; the script reuses that group and its region. You can also pass -ResourceGroupName with the assigned group name. The script enables Search key and Entra authentication, creates the Search and project managed identities, and assigns their scoped service roles. The script requests capacity 10 for each deployment. If a model version, SKU, region, or quota is unavailable, use an instructor-provided deployment and configure each lesson’s <code>.env</code> with its actual names. If you already have assigned resources, skip provisioning and use the existing-resource route in that lesson’s HTML.</p>'),
+        section("python", 2, "Prepare Python for later labs", '<p>Provisioning uses Azure CLI and PowerShell. Create the classic course environment so Lab 01 and later classic RAG apps can run after setup:</p>' + code('py -3.11 -m venv .venv\n.\\.venv\\Scripts\\python.exe -m pip install -r .\\requirements.txt\n.\\.venv\\Scripts\\python.exe -m pip check') + '<p>Lab 05 uses its separate <code>.venv-foundry</code> because its SDK has different dependency versions.</p>'),
+        section("azure", 3, "Select a subscription and create resources", '<p>Use your assigned subscription. For a shared class subscription, the unique tag prevents resource-name collisions. Enter your actual assigned tag and group. If you are reusing resources, skip provisioning.</p>' + code('az login\naz account set --subscription "<subscription-id>"\naz account show --query "{subscription:id,name:name}" --output table\n$StudentTag = Read-Host "Your assigned student tag"\n$ResourceGroupName = Read-Host "Your assigned resource group name"\n.\\00_setup_environment\\setup.ps1 -StudentTag $StudentTag -ResourceGroupName $ResourceGroupName') + '<p>If your instructor assigned a resource group, use your assigned student tag; the script reuses that group and its region. You can also pass -ResourceGroupName with the assigned group name. The script enables Search key and Entra authentication, creates the Search and project managed identities, and assigns their scoped service roles. The script requests capacity 10 for each deployment. If a model version, SKU, region, or quota is unavailable, use an instructor-provided deployment and configure each lesson’s <code>.env</code> with its actual names. If you already have assigned resources, skip provisioning and use the existing-resource route in that lesson’s HTML.</p>'),
         section("certificates", "", "Certificate errors on corporate networks", '<p>If the old script reports <code>CERTIFICATE_VERIFY_FAILED</code> at <code>/indexes/rag-basic</code>, download the updated <a href="./setup.ps1">setup.ps1</a> and rerun with the <strong>same student tag, resource group and region</strong>. The Search index request now uses native PowerShell HTTPS and Windows certificate trust, including approved corporate CAs installed by IT. Certificate verification stays enabled. If your existing index already contains lab data, configure certificate trust and resume the lab rather than reprovisioning its schema.</p><p>If PowerShell also reports an untrusted issuer, ask IT to install the approved corporate CA chain in Windows. If another Azure CLI command or Python lab fails, obtain an IT-approved PEM CA bundle containing public roots plus the corporate chain and set these in the same terminal:</p>' + code('$env:REQUESTS_CA_BUNDLE = \'C:\\Certificates\\approved-ca-bundle.pem\'\n$env:SSL_CERT_FILE = $env:REQUESTS_CA_BUNDLE') + '<p>Replace the example path with the actual IT-provided bundle. Set these variables in each new terminal. Do not disable TLS certificate verification. See <a href="https://learn.microsoft.com/en-us/cli/azure/use-azure-cli-successfully-troubleshooting#work-behind-a-proxy">Microsoft proxy and certificate guidance</a>.</p>'),
         section("scripts", 4, "Understand the setup files", scripts),
         section("run", 5, "Inspect the result", '<p>Expect <code>Setup complete</code> and <code>00_setup_environment/.env.generated</code>. Check resource names without printing keys:</p>' + code('$labGroup = ((Select-String -Path .\\00_setup_environment\\.env.generated -Pattern "^AZURE_RESOURCE_GROUP=").Line -split "=", 2)[1]\naz resource list --resource-group $labGroup --query "[].{name:name,type:type}" --output table\nTest-Path .\\00_setup_environment\\.env.generated') + '<p>Do not post <code>.env.generated</code>; it contains admin and model keys. Copy its values into each lab’s <code>.env</code> as that lab instructs. The original Blob files are not yet searchable; run the lesson builder next.</p>'),
@@ -700,6 +732,14 @@ def make_setup_page():
 def main():
     lab01 = ROOT / "01_basic_rag_diagnose" / "lab_01_exercise.html"
     lab01_html = lab01.read_text(encoding="utf-8")
+    if 'id="get-code"' in lab01_html:
+        lab01_html = re.sub(r'<section id="get-code">.*?</section>', lambda _: course_start(), lab01_html, count=1, flags=re.S)
+    else:
+        lab01_html = lab01_html.replace('<main>', '<main>' + course_start(), 1)
+        lab01_html = lab01_html.replace('<a href="#prereq">', '<a href="#get-code">0. Clone and open Labs</a><a href="#prereq">', 1)
+    lab01_html = lab01_html.replace('python -m venv', 'py -3.11 -m venv').replace('gpt-5-mini', 'gpt-4.1')
+    lab01_html = re.sub(r'(<section id="azure">).*?(</section>)', lambda m: m[1] + '<h2>3. Create or reuse Azure resources</h2>' + azure_setup({'resource': 'search'}) + m[2], lab01_html, count=1, flags=re.S)
+    lab01_html = lab01_html.replace('Create or edit <code>01_basic_rag_diagnose/.env</code> with the values for your assigned resources:', 'Run <code>notepad .\\01_basic_rag_diagnose\\.env</code>, paste your assigned values below, and save as <code>.env</code> (not <code>.env.txt</code>):')
     for source_id, filename in [
         ("builder-source", "build_index.py"),
         ("console-source", "rag_app.py"),
