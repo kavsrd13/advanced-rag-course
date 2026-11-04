@@ -1,32 +1,36 @@
-# Observed classroom results
+# Observed results: simple cafe data
 
-Live retrieval check on 4 November 2026 using text-embedding-3-large (3,072 dimensions) and Azure AI Search semantic ranker. Each mode used the same index and question. These are observations from one run, not guaranteed future rankings.
+Live checks on 5 November 2026. Eight short notes, text-embedding-3-large, Azure AI Search semantic ranker. These are observed rankings, not guaranteed winners.
 
-| Question | Keyword rank 1 | Vector rank 1 | Hybrid + rerank rank 1 | Reranked winner’s prior fusion rank |
+| Question | Keyword: first note | Vector: first note | Hybrid + rerank: first note | Hybrid winner before reranking |
 |---|---|---|---|---|
-| Exact code NS-7428 | 03-scanner-recovery | 01-printer-recovery | 03-scanner-recovery | 2 |
-| Offboarding paraphrase | 11-external-sharing | 05-offboarding | 05-offboarding | 6 |
-| Code plus held-job requirement | 01-printer-recovery | 01-printer-recovery | 01-printer-recovery | 1 |
-| Contractor / Restricted / personal laptop | 07-employee-byod | 08-contractor-restricted | 08-contractor-restricted | 2 |
-| Misplaced notebook | 10-device-encryption | 10-device-encryption | 10-device-encryption | 1 |
-| Unsupported parental-leave question | 09-remote-access | 09-remote-access | 12-visitor-wifi | 2 |
+| Milkshake price | 01-mango-milkshake | 01-mango-milkshake | 01-mango-milkshake | 1 |
+| Bring my order to my house | 06-change-of-mind | 04-home-delivery | 04-home-delivery | 3 |
+| Sour milkshake refund | 01-mango-milkshake | 07-spoiled-drink | 06-change-of-mind | 3 |
+| Changed my mind after opening | 06-change-of-mind | 06-change-of-mind | 06-change-of-mind | 1 |
+| Saturday closing time | 08-opening-hours | 08-opening-hours | 08-opening-hours | 1 |
+| Wi-Fi password (unsupported) | 06-change-of-mind | 08-opening-hours | 08-opening-hours | 5 |
 
-The first four questions illustrate different lessons:
+## What to show in class
 
-1. Exact code: keyword retrieval found the scanner procedure; vector-only retrieval favored the nearby printer fault.
-2. Paraphrase: keyword retrieval favored external sharing; vector search found offboarding. Hybrid reranking promoted offboarding from fusion rank 6 to rank 1.
-3. Detailed printer question: all methods found the same correct recovery passage. A good query can make every method succeed.
-4. Conditional policy: keyword retrieval preferred employee BYOD; vector and hybrid reranking preferred the contractor policy. Reranking moved the contractor policy from fusion rank 2 to rank 1.
+- **Easy exact wording:** all three found the mango milkshake price note.
+- **Same meaning, different words:** for "bring my order to my house", keyword
+  ranked the refund rule first, vector found home delivery, and hybrid reranking
+  moved home delivery from fusion rank 3 to rank 1.
+- **An honest failure:** for the sour milkshake question, vector selected the
+  spoiled-drink exception first. Hybrid reranking placed the general refund rule
+  above it. With only one passage, hybrid does not have the best evidence here.
+  Increase the count to 2 to supply the exception too. Reranking is not infallible.
+- **Simple controls:** all three selected the change-of-mind rule and Saturday
+  opening-hours note for their respective questions.
+- **Missing information:** no note gives a Wi-Fi password, even though all methods
+  return some passages. The answer model should abstain.
 
-The parental-leave question has no supporting document. The table still shows returned nearest/matching passages: these are not valid answers. Retrieval rank alone cannot establish answerability.
+This dataset is intentionally tiny and fully readable. It demonstrates word
+matching, meaning matching, reranking and evidence selection, not a general
+benchmark claiming one method is always best. The app uses real service calls
+and has no question-specific ranking overrides or canned answers.
 
-Validation completed: 12 real text records indexed, six questions across three retrieval methods, and a Gradio HTTP callback with four outputs. Raw ranking snapshots and private connection settings are excluded from Git. See prompts.txt for the teaching sequence.
+## Answer and UI checks
 
-Answer-generation check with one selected passage and the same gpt-5-mini deployment:
-
-- Offboarding question, Keyword: abstained because the sharing passage did not answer it.
-- Offboarding question, Vector: returned the offboarding checklist with a [05-offboarding] citation.
-- Offboarding question, Hybrid + rerank: returned the offboarding checklist with a [05-offboarding] citation.
-- Unsupported parental-leave question, Hybrid + rerank: abstained.
-
-The README example uses GPT-4.1; replace deployment names with the models actually available on your resource. Answer wording can vary. The live checks above do not establish production accuracy or guarantee the same ranking on every model/service revision.
+Gradio started successfully with all 8 notes visible in its dataset panel. For the delivery question with one passage, Keyword abstained; Vector and Hybrid answered yes with the Rs200 minimum, Rs20 fee and service hours. The unsupported Wi-Fi question produced an abstention; its attached citation was not evidence of a password, illustrating why a citation alone is not proof of support. The old IT demo index was retired after the cafe index was verified.

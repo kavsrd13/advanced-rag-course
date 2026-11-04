@@ -1,2 +1,0 @@
-Luma P500 ordinary paper-jam handling
-For an ordinary paper jam, stop printing, open the rear access panel, and gently remove the visible sheet in the direction of travel. Close the panel and follow the display instructions to continue. Do not use this procedure for a finishing module calibration fault. Removing paper does not calibrate a replacement finishing module. Hardware support should inspect repeated jams that occur with approved paper and correctly adjusted guides.

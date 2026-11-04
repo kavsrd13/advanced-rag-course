@@ -1,0 +1,2 @@
+Spoiled Drink
+If a drink has gone bad, return it within 24 hours with your receipt. We will replace it or give your money back, even if the seal is broken. This exception applies to spoiled products, not a change of mind.

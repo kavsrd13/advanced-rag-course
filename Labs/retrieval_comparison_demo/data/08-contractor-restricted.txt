@@ -1,2 +1,0 @@
-Contractor access to Restricted forecasts
-A contractor must not open, edit, or download Restricted forecasts on a personal laptop. Employee BYOD permissions do not extend to contractors or Restricted material. Provide a company-managed workstation with an approved virtual desktop for this work. Inside the virtual desktop, disable clipboard export, local drive redirection, and file downloads. A manager's email approval alone cannot waive these controls. The contractor may edit the forecast only within the approved environment after access authorization.

@@ -1,77 +1,50 @@
-NORTHSTAR IT SUPPORT: THREE RETRIEVAL PATTERNS
-===========================================
-All documents, people, policies and codes in this demo are fictional.
-Use the SAME question and passage count for all three methods.
-First turn answer generation OFF. Compare ranked evidence. Then turn it ON.
-Start with 1 passage to make rank differences visible; repeat with 2 or 3.
-Do not assume that hybrid always wins or compare raw score values across modes.
+SUNNY CAFE: SIMPLE CLASSROOM PROMPTS
+===================================
+Read the 8 tiny files in data/ or expand the dataset panel in Gradio.
+Use 1 passage and turn answer generation OFF at first.
 
-1. EXACT IDENTIFIER
-Prompt: NS-7428
-Expected useful sources: 03-scanner-recovery and 02-printer-code-catalog.
-Observe: keyword search can exploit an exact, opaque code. Vector search may also
-succeed, but inspect whether it confuses the nearby code NS-7429. The correct
-subsystem is the scanner feed sensor, not the finishing module. This short query
-is for Keyword/Vector first; semantic rankers work better with full questions.
-Follow-up: What is the recovery procedure for NS-7428?
+1. MATCH WORDS
+What is the price of Mango Milkshake?
+Correct note: 01-mango-milkshake. Price: Rs90.
+Explain: the question repeats the menu name. All methods may succeed.
 
-2. PARAPHRASE WITH LITTLE WORD OVERLAP
-Prompt: A colleague has left the organisation. How do we stop them getting into our systems?
-Expected useful source: 05-offboarding.
-Observe: the file uses "employment termination", "deactivate corporate identity",
-"revoke refresh tokens" and "terminate active sessions". Keyword retrieval can
-miss it because the question uses different words. Vector and hybrid can connect
-the meanings. The account-recovery document restores access and is not sufficient
-for this question. Inspect the actual ranks rather than expecting a fixed winner.
+2. MATCH MEANING
+Can you bring my order to my house?
+Correct note: 04-home-delivery.
+Explain: the note uses purchases/address, not order/house. Takeaway is different:
+the customer collects it at the counter. Look at the actual ranking in each mode.
+Correct delivery conditions: Rs200 minimum bill, Rs20 fee, 11am-7pm Mon-Sat.
 
-3. EXACT CODE PLUS A PARTICULAR REQUIREMENT
-Prompt: For NS-7429 after replacing the finishing module, how can I continue without losing the queued job?
-Expected useful source: 01-printer-recovery.
-Observe: the catalog, scanner procedure and ordinary jam guide share printer
-language. The required procedure is to hold the queued job, reseat the blue latch,
-run Calibrate Finisher, and resume after success. Do not clear or resend the job.
-Use Hybrid + rerank and inspect "Hybrid rank before rerank" in the candidate
-table. Compare the final position with the baseline fusion position.
+3. FIND THE EXCEPTION
+My mango milkshake has gone sour. Can I get a refund after opening it?
+Correct note: 07-spoiled-drink.
+Explain: 01 describes the menu; 06 gives the general change-of-mind rule; 07 is
+the spoiled-product exception. An opened spoiled drink can be replaced or
+refunded within 24 hours with a receipt. Inspect before/after reranking.
 
-4. CONDITIONAL POLICY WITH A PLAUSIBLE DISTRACTOR
-Prompt: Can a contractor edit Restricted forecasts on a personal laptop if employee BYOD is allowed?
-Expected useful source: 08-contractor-restricted.
-Observe: 07-employee-byod allows a different person/data combination. Relevant
-words alone do not establish permission. The correct working environment is a
-company-managed workstation with an approved virtual desktop. Semantic reranking
-can help prioritize the passage that answers the exact conditions.
+4. CHECK THE OPPOSITE CONDITION
+I opened a lemonade and simply changed my mind. Can I get a refund?
+Correct note: 06-change-of-mind. Answer: no, not for a simple change of mind.
+Explain: the spoiled-drink exception does not apply to this question.
 
-5. EVERYDAY LANGUAGE
-Prompt: I left my notebook in a taxi. Can the finder view the information stored on it?
-Expected useful source: 10-device-encryption.
-Observe: "misplaced portable computer" and "full-disk encryption" describe the
-scenario without repeating "notebook" or "taxi". A supported answer must retain
-the condition: powered off or locked, protected keys; an unlocked session differs.
+5. EASY CONTROL QUESTION
+What time does the cafe close on Saturday?
+Correct note: 08-opening-hours. Answer: 8pm.
+Explain: all three methods may give the same good result.
 
-6. UNSUPPORTED QUESTION
-Prompt: How many days of parental leave does Northstar provide?
-Expected: no document contains this answer. The model should abstain in every
-mode. Vector search can still return nearest neighbors; nearest does not mean
-relevant. Examine the passages rather than trusting a nonzero similarity score.
+6. NO ANSWER IN THE DATA
+What is the cafe's Wi-Fi password?
+No correct source exists. The answer should say the evidence does not contain
+it. Vector and hybrid may return nearby notes; retrieval is not proof of an answer.
 
-7. CONTROL QUESTION: ALL THREE MAY WORK
-Prompt: How should a visitor use the guest wireless network?
-Expected useful source: 12-visitor-wifi.
-Observe: clear wording and a unique topic can make all methods succeed.
+TEACHING STEPS
+1. Read all notes. Everyone can understand the complete data in a minute.
+2. Ask question 1 with Keyword mode.
+3. Ask question 2; switch Keyword -> Vector -> Hybrid + rerank without editing it.
+4. Ask question 3. Compare the menu, general rule and exception passages.
+5. Turn answers ON. Compare citations with the selected note.
+6. Increase passage count from 1 to 3 and observe whether differences shrink.
+7. Finish with question 6 to demonstrate abstention.
 
-TEACHING SEQUENCE
-1. Ask prompt 2 in Keyword mode with one passage and answer generation off.
-2. Switch to Vector without changing the question or passage count.
-3. Use Compare all three to inspect the three evidence lists together.
-4. Try prompts 3 and 4; inspect ranking before/after hybrid reranking.
-5. Turn answers on. Check citations and whether each claim occurs in evidence.
-6. Increase the evidence count. Explain why more context may hide retrieval errors.
-7. Finish with prompt 6: even hybrid reranking cannot invent missing source facts.
-
-LIMITS OF THIS DEMO
-There are 12 short text files, each indexed as one passage. No hidden document
-boosting, hardcoded result ordering, query-specific retrieval rules, or canned
-answers are used. Rankings depend on the deployed embedding model and Search
-ranker. Hybrid includes two changes: fusion plus reranking. Its extra baseline
-request exposes fusion order, but this is not a large benchmark or an isolated
-test of reranking alone. No production authentication or document ACLs are shown.
+No fake rankings or scripted answers are used. Rankings can vary by embedding
+model and Search service revision. Compare methods using the SAME evidence count.

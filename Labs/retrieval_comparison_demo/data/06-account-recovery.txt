@@ -1,2 +1,0 @@
-Locked employee account recovery
-An active employee who is locked out of an account should contact the service desk, verify identity, and request a password reset. After successful verification, the service desk unlocks the account and checks whether the employee can sign in again. This procedure restores access for an active employee. It must not be used after employment termination; use the offboarding checklist instead.

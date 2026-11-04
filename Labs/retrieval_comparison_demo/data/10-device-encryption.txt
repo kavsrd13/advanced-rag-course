@@ -1,2 +1,0 @@
-Protection of information on misplaced portable computers
-Corporate portable computers use full-disk encryption with hardware-backed keys. An unauthenticated finder cannot read encrypted local storage while the machine is powered off or locked and the encryption keys remain protected. This protection does not apply to a machine left with an unlocked signed-in session. Report missing equipment promptly so Security can revoke credentials and attempt a remote lock. Encryption reduces exposure; it does not guarantee protection in every loss scenario.

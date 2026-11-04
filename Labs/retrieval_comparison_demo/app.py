@@ -24,12 +24,12 @@ HERE = Path(__file__).resolve().parent
 load_dotenv(HERE / ".env", override=True)
 MODES = ["Keyword", "Vector", "Hybrid + rerank"]
 PROMPTS = [
-    "NS-7428",
-    "A colleague has left the organisation. How do we stop them getting into our systems?",
-    "For NS-7429 after replacing the finishing module, how can I continue without losing the queued job?",
-    "Can a contractor edit Restricted forecasts on a personal laptop if employee BYOD is allowed?",
-    "I left my notebook in a taxi. Can the finder view the information stored on it?",
-    "How many days of parental leave does Northstar provide?",
+    "What is the price of Mango Milkshake?",
+    "Can you bring my order to my house?",
+    "My mango milkshake has gone sour. Can I get a refund after opening it?",
+    "I opened a lemonade and simply changed my mind. Can I get a refund?",
+    "What time does the cafe close on Saturday?",
+    "What is the cafe's Wi-Fi password?",
 ]
 
 
@@ -47,12 +47,17 @@ def clients():
     return search, model
 
 
-def build_index():
-    search, model = clients()
+def read_documents():
     documents = []
     for path in sorted((HERE / "data").glob("*.txt")):
         title, content = path.read_text(encoding="utf-8").split("\n", 1)
         documents.append({"id": path.stem, "title": title, "content": content.strip(), "source": path.name})
+    return documents
+
+
+def build_index():
+    search, model = clients()
+    documents = read_documents()
     vectors = model.embeddings.create(
         model=os.environ["AZURE_OPENAI_EMBEDDING_DEPLOYMENT"],
         input=[d["title"] + "\n" + d["content"] for d in documents],
@@ -128,7 +133,7 @@ def generate(question, evidence):
     response = model.chat.completions.create(
         model=os.environ["AZURE_OPENAI_DEPLOYMENT"],
         messages=[
-            {"role": "system", "content": "Answer briefly using only the supplied evidence. Cite document IDs in square brackets. Respect device, person and data-classification conditions. If the evidence does not answer the question, say: The supplied evidence does not contain the answer."},
+            {"role": "system", "content": "Answer briefly using only the supplied cafe notes. Cite document IDs in square brackets. Pay attention to the conditions and exceptions. If the notes do not answer the question, say: The supplied evidence does not contain the answer."},
             {"role": "user", "content": f"Question: {question}\n\nEvidence:\n{context}"},
         ],
     )
@@ -163,8 +168,10 @@ def compare_all(question, top_k, generate_answer):
 
 
 def demo():
-    with gr.Blocks(title="Three ways to retrieve: Northstar IT support") as ui:
-        gr.Markdown("# One question, three RAG patterns\nFictional Northstar IT support. Use the same question and evidence count in each mode. Try exact codes, everyday paraphrases and conditional policies.")
+    with gr.Blocks(title="Sunny Cafe: three simple RAG patterns") as ui:
+        gr.Markdown("# Sunny Cafe: one question, three RAG patterns\nA tiny fictional cafe has **8 short notes** about drinks, delivery, refunds and opening hours. Compare the same question with Keyword, Vector and Hybrid + rerank. Start with **1 passage** and answers turned off.")
+        with gr.Accordion("Read all 8 cafe notes before asking questions", open=False):
+            gr.Markdown("\n\n---\n\n".join(f"**{d['title']}** (`{d['source']}`)\n\n{d['content']}" for d in read_documents()))
         question = gr.Textbox(label="Question", lines=3, value=PROMPTS[1])
         with gr.Row():
             mode = gr.Dropdown(MODES, value="Keyword", label="Retrieval method")

@@ -1,2 +1,0 @@
-Offboarding checklist
-Upon employment termination, deactivate the corporate identity, revoke refresh tokens, terminate active sessions, remove group memberships, and invalidate VPN credentials. Complete these actions at the effective departure time recorded by HR. Retrieve issued equipment and transfer ownership of business records to the designated manager. Merely resetting a password is inadequate because cached tokens and active sessions may remain valid. Identity Operations records completion in the termination ticket.

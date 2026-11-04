@@ -1,26 +1,22 @@
-# One app: keyword, vector, and hybrid RAG with reranking
+# Sunny Cafe: three simple RAG patterns
 
-A fictional Northstar IT support desk has 12 small text files. Some use exact
-error codes, some express the same idea in different words, and some contain
-similar policies with different conditions. The app compares real retrieval
-results, then uses the same chat model and grounding prompt to answer.
+One Gradio app and **8 short text files**. The cafe sells mango milkshake,
+lemonade and coffee. It also has simple rules for delivery, takeaway, refunds
+and opening hours. Read the entire dataset in the app before asking questions.
 
-## 1. Get the code and open this folder
+## 1. Get the code
 
-Install Git, Python 3.11 and Azure CLI. Open Windows PowerShell:
+Install Git and Python 3.11, then open Windows PowerShell:
 
 ```powershell
 git clone https://github.com/kavsrd13/advanced-rag-course.git
 Set-Location .\advanced-rag-course\Labs\retrieval_comparison_demo
 ```
 
-If the instructor supplied this folder directly, open PowerShell in that folder.
-If the repository already exists, save local edits before updating it with
-`git pull --ff-only`, then open `Labs\retrieval_comparison_demo`.
+If you already have the repository, save your work, run `git pull --ff-only`,
+and open `Labs\retrieval_comparison_demo`. Run the remaining commands here.
 
-## 2. Create a Python environment
-
-Run all commands below from **retrieval_comparison_demo**, not the parent Labs folder:
+## 2. Install packages
 
 ```powershell
 py -3.11 -m venv .venv
@@ -29,128 +25,88 @@ py -3.11 -m venv .venv
 $env:PYTHONIOENCODING = 'utf-8'
 ```
 
-You can also use the course's existing classic RAG environment by invoking its
-Python at `..\.venv\Scripts\python.exe` instead of the local environment.
+Alternatively use the existing classic course environment at
+`..\.venv\Scripts\python.exe` instead of this folder's environment.
 
-## 3. Configure existing Azure resources
+## 3. Configure your existing Azure resources
 
-Use an Azure AI Search service with **semantic ranker enabled** and room for one
-additional index, plus a chat deployment and an embedding deployment. The
-instructor's course setup supplies these resources. If you need to create them,
-follow `../00_setup_environment/lab_00_exercise.html` first; this app creates no
-Search service, Storage account or Foundry resource.
+Use a Search service with semantic ranker enabled and your existing embedding
+and chat deployments. For new resources, complete the course Azure setup first.
 
 ```powershell
 Copy-Item .\.env.example .\.env
 notepad .\.env
 ```
 
-Paste your actual endpoints, keys and deployment names. Change
-`DEMO_SEARCH_INDEX=rag-compare-yourtag` to a unique name such as
-`rag-compare-u02`. The app deliberately requires the `rag-compare-` prefix and
-creates a **new index** instead of modifying an existing lesson index. Do not
-point it at `rag-basic`. `.env` is private and ignored by Git.
+Fill in your own endpoints, resource keys and deployed model names. Use the
+Azure OpenAI endpoint, not the Foundry project endpoint. Give the index a unique
+name such as `rag-compare-cafe-u02`. Keep the `rag-compare-` prefix. Never share
+`.env`; it is ignored by Git. The builder detects the embedding dimensions.
 
-Use the Azure OpenAI endpoint ending in `.openai.azure.com`, not the Foundry
-project endpoint. `text-embedding-3-large` works; the builder detects the vector
-dimensions returned by your embedding deployment. Keep that deployment unchanged
-between indexing and querying.
+**Updating the old IT demo?** Change `DEMO_SEARCH_INDEX` to a new cafe index name
+and rebuild. Restart Gradio after editing `.env`. Otherwise old indexed IT
+passages could still be returned. Use the same embedding deployment at build
+and query time. Do not reuse another course index such as `rag-basic`.
 
-For a private instructor checkout, configuration can be copied from a working
-course `.env`, but use only your assigned credentials and add `DEMO_SEARCH_INDEX`.
-No student should receive another person's key file.
+For corporate certificate errors, use an IT-approved CA bundle and the course's
+certificate troubleshooting guide. Do not disable certificate verification.
 
-If you see SSL certificate errors, use the IT-approved CA bundle and the
-certificate guidance in the course setup exercise. Do not disable verification.
-If Azure requires authentication for resource management, run `az login` and
-complete MFA; the app itself uses the configured resource keys.
-
-## 4. Build the dedicated demo index
+## 4. Build once and open Gradio
 
 ```powershell
 .\.venv\Scripts\python.exe .\app.py --build-index
-```
-
-Expected: 12 documents and the detected embedding dimension. Each text file is
-already a short passage, so there is no additional chunking algorithm to distract
-from retrieval. The first line becomes the title; the rest is the content.
-
-The command fails if that index already exists. To rebuild, choose a fresh unique
-`DEMO_SEARCH_INDEX` or delete only this demo index in Azure Portal first. It never
-deletes an existing index automatically. Allow a few moments after upload for the
-new records to become searchable.
-
-## 5. Launch Gradio
-
-```powershell
 .\.venv\Scripts\python.exe .\app.py
 ```
 
-Open the local URL printed by Gradio. Keep the terminal running and use Ctrl+C
-to stop. The app does not create a public sharing link.
+The builder creates a new index with 8 documents. It deliberately fails if the
+index exists, rather than overwriting another schema. For a rebuild, choose a
+new demo index name or delete only your own demo index in Azure Portal first.
+Wait a few moments after uploading for records to become searchable.
 
-1. Leave the paraphrased offboarding question in the textbox.
-2. Turn off **Generate an answer** and set the evidence count to **1**.
-3. Run Keyword, then Vector. Inspect the different documents, not just the scores.
-4. Open **Compare all three** and click its button for a side-by-side view.
-5. Try the printer and contractor questions from `prompts.txt`.
-6. Turn generation on and inspect citations and selected source text.
-7. Increase the evidence count and observe how the answer changes.
+Open the local URL printed by Gradio. Stop the app with Ctrl+C.
 
-The selector does not run automatically: click Run after switching it. Compare
-all three can make three paid answer calls. Disable generation to teach retrieval
-first; embedding and semantic Search calls can still incur charges.
+## 5. Teach with three questions
 
-## 6. Understand the information flow in app.py
+Set the passage count to **1** and turn **Generate an answer** off first.
 
-| Mode | Retrieval flow |
+| Question | What to explain |
 |---|---|
-| Keyword | Text query → Azure BM25 → top passages → grounded answer |
-| Vector | Question embedding → vector-only query → top passages → grounded answer |
-| Hybrid + rerank | Text + vector → Azure RRF fusion → semantic reranker → top passages → grounded answer |
+| What is the price of Mango Milkshake? | Keyword search matches the menu words directly. All three may succeed. |
+| Can you bring my order to my house? | The delivery note says purchases/address. Vector search can connect these meanings. |
+| My mango milkshake has gone sour. Can I get a refund after opening it? | The spoiled-drink exception must be distinguished from the general refund rule and the menu item. |
 
-`build_index()` loads the text files, embeds title + content, defines the Search
-schema and uploads records. `retrieve()` changes only retrieval according to the
-mode. The candidate limit is 50; the small dataset contains only 12 documents.
-Vector mode uses exhaustive search for this small teaching corpus. Hybrid makes
-an extra request to expose the fusion ranking before reranking. It fails visibly
-if semantic reranking is unavailable, rather than presenting plain hybrid as
-reranked results.
+Switch methods and click **Run selected method**, or choose **Compare all three**.
+Read the selected note and rank before turning answers on. Hybrid mode shows
+both the fusion rank before reranking and the final rank. The same question,
+passage count, chat model and answer prompt are used across modes.
 
-`run_mode()` takes the first N ranked passages and passes them to `generate()`.
-The same chat deployment, question and system prompt are used for every mode.
-`compare_all()` calls the same function for all three methods. Gradio only wires
-these functions to the controls; it does not choose or fabricate evidence.
+More prompts and the teacher walkthrough are in [prompts.txt](prompts.txt).
+Actual live observations are in [OBSERVED_RESULTS.md](OBSERVED_RESULTS.md).
+Rankings can change; the app does not force a winner. The Wi-Fi question has no
+answer in the notes and should produce an abstention.
 
-The ranking table shows every returned candidate and which ones reached the
-answer model. Hybrid mode also shows its rank before reranking. BM25 scores,
-Azure vector scores, RRF scores and semantic reranker scores have different
-scales. The Azure vector score is not raw cosine similarity. Compare source
-relevance and order, not score magnitudes across methods. Search time excludes
-query embeddings and generation; hybrid includes the extra teaching request,
-so this display is not an end-to-end latency benchmark.
+## 6. Understand the single code file
 
-## 7. Prompts and expected differences
+- `read_documents()`: first line is the title; the remaining text is one passage.
+- `build_index()`: embeds the 8 notes and uploads them to a dedicated Search index.
+- `retrieve()`: Keyword uses BM25; Vector uses only an embedding query; Hybrid
+  combines both with Azure RRF, then applies the semantic ranker.
+- `generate()`: gives only selected notes to the chat model and requests citations.
+- `run_mode()` and `compare_all()`: connect the retrieval choices to Gradio.
 
-Read `prompts.txt` for seven questions, expected source IDs, and what to inspect.
-The offboarding paraphrase is designed to expose a vocabulary mismatch; the exact
-codes show lexical matching; the contractor and recovery questions need precise
-conditions. Rankings are not guaranteed, and all three may answer an easy query
-correctly. The unsupported parental-leave question should produce abstention.
+Vector mode uses exhaustive search for this tiny dataset. Hybrid makes an extra
+request to show ranking before reranking. It reports an error if semantic
+reranking is unavailable instead of silently showing ordinary hybrid results.
+Raw BM25, vector, RRF and reranker scores have different scales. Compare the
+passages and their order, not raw score magnitudes. Search time excludes
+embeddings and generation; hybrid includes its extra teaching request.
 
-These are real service results, not a scripted demonstration that forces hybrid
-to win. This app does not implement document authorization or production sign-in.
-See [OBSERVED_RESULTS.md](OBSERVED_RESULTS.md) for the actual source rankings
-recorded during the instructor's live run.
+## 7. Cleanup
 
-## 8. Cleanup
-
-Stop Gradio. In Azure Portal → your Search service → Indexes, delete only the
-index matching `DEMO_SEARCH_INDEX` in this folder's `.env`. Keep the Search
-service, other indexes and shared model deployments. Remove the local `.env`
-and virtual environment when no longer needed. No resource group deletion is
-required for this demo.
+Stop Gradio. In Azure Portal, delete only the Search index named by this demo's
+`DEMO_SEARCH_INDEX`. Keep other course indexes, services and model deployments.
+Model calls, embeddings and semantic ranking may incur charges. The app does
+not implement production sign-in or document permissions.
 
 References: [hybrid ranking](https://learn.microsoft.com/en-us/azure/search/hybrid-search-ranking),
-[hybrid queries](https://learn.microsoft.com/en-us/azure/search/hybrid-search-how-to-query),
 [vector quickstart](https://learn.microsoft.com/en-us/azure/search/search-get-started-vector).
